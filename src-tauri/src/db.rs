@@ -453,6 +453,7 @@ pub async fn import_backup(
     app: AppHandle,
     state: tauri::State<'_, DbState>,
     backup_path: String,
+    push_to_firebase: bool,
 ) -> Result<(), String> {
     let app_dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
     let db_path = app_dir.join("pharmacy.db");
@@ -504,36 +505,38 @@ pub async fn import_backup(
         }
     }
 
-    // Add all existing records to pending_sync so they get pushed to Firebase
-    let entities_to_sync = vec![
-        "Medicamento", "Lote", "Entrada", "Saida",
-        "Fornecedor", "Ala", "Categoria", "Emprestimo",
-        "Inventario", "InventarioItem"
-    ];
+    if push_to_firebase {
+        // Add all existing records to pending_sync so they get pushed to Firebase
+        let entities_to_sync = vec![
+            "Medicamento", "Lote", "Entrada", "Saida",
+            "Fornecedor", "Ala", "Categoria", "Emprestimo",
+            "Inventario", "InventarioItem"
+        ];
 
-    let tx = new_conn.transaction().map_err(|e| e.to_string())?;
+        let tx = new_conn.transaction().map_err(|e| e.to_string())?;
 
-    for table in entities_to_sync {
-        let query = format!("SELECT id FROM {}", table);
-        let mut ids_to_sync = Vec::new();
-        if let Ok(mut stmt) = tx.prepare(&query) {
-            if let Ok(rows) = stmt.query_map([], |row| row.get::<_, String>(0)) {
-                for id in rows.filter_map(Result::ok) {
-                    ids_to_sync.push(id);
+        for table in entities_to_sync {
+            let query = format!("SELECT id FROM {}", table);
+            let mut ids_to_sync = Vec::new();
+            if let Ok(mut stmt) = tx.prepare(&query) {
+                if let Ok(rows) = stmt.query_map([], |row| row.get::<_, String>(0)) {
+                    for id in rows.filter_map(Result::ok) {
+                        ids_to_sync.push(id);
+                    }
                 }
+            }
+            
+            for id in ids_to_sync {
+                let _ = tx.execute(
+                    "INSERT OR REPLACE INTO pending_sync (entity_name, record_id, operation, created_at)
+                     VALUES (?, ?, 'update', datetime('now'))",
+                    params![table, id],
+                );
             }
         }
         
-        for id in ids_to_sync {
-            let _ = tx.execute(
-                "INSERT OR REPLACE INTO pending_sync (entity_name, record_id, operation, created_at)
-                 VALUES (?, ?, 'update', datetime('now'))",
-                params![table, id],
-            );
-        }
+        tx.commit().map_err(|e| e.to_string())?;
     }
-    
-    tx.commit().map_err(|e| e.to_string())?;
 
     // Swap the connection
     *conn_guard = new_conn;

@@ -172,13 +172,28 @@ pub async fn upsert_from_firebase(
 
     let mut count = 0usize;
 
+    // Get valid columns for the table
+    let col_query = format!("PRAGMA table_info('{}')", entity_name);
+    let mut valid_columns = std::collections::HashSet::new();
+    if let Ok(mut stmt) = tx.prepare(&col_query) {
+        if let Ok(rows) = stmt.query_map([], |row| row.get::<_, String>(1)) {
+            for col in rows.filter_map(Result::ok) {
+                valid_columns.insert(col);
+            }
+        }
+    }
+
     for record in &records {
         let obj = match record.as_object() {
             Some(o) => o,
             None => continue,
         };
 
-        let keys: Vec<&String> = obj.keys().collect();
+        let keys: Vec<&String> = obj.keys().filter(|k| valid_columns.contains(k.as_str())).collect();
+        if keys.is_empty() {
+            continue;
+        }
+
         let columns = keys.iter().map(|k| k.as_str()).collect::<Vec<&str>>().join(", ");
         let placeholders = keys.iter().map(|_| "?").collect::<Vec<&str>>().join(", ");
         let query = format!(

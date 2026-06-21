@@ -139,10 +139,16 @@ export default function Configuracoes() {
             });
 
             if (selected) {
+                const pushToFirebase = window.confirm(
+                    "Deseja enviar os dados deste backup para o Firebase?\n\n" +
+                    "OK: O backup substituirá a nuvem (Recomendado se este backup for o mais atual).\n" +
+                    "Cancelar: O backup ficará apenas offline e não alterará a nuvem."
+                );
+
                 toast.loading("Restaurando banco de dados SQLite...");
                 
                 // 1. Substitui o pharmacy.db pelo arquivo selecionado
-                await invoke("import_backup", { backupPath: selected });
+                await invoke("import_backup", { backupPath: selected, pushToFirebase });
 
                 // 2. Exporta todos os dados do SQLite restaurado para JSON
                 toast.loading("Carregando dados para o sistema...");
