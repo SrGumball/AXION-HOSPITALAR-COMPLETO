@@ -469,7 +469,7 @@ pub async fn import_backup(
     std::fs::copy(&backup_path, &db_path).map_err(|e| e.to_string())?;
     
     // Reopen connection to the restored database
-    let new_conn = Connection::open(&db_path).map_err(|e| e.to_string())?;
+    let mut new_conn = Connection::open(&db_path).map_err(|e| e.to_string())?;
 
     // Run migrations on the restored database (creates tables if missing)
     let migration_sql = include_str!("../migrations.sql");
