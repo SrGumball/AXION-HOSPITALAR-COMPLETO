@@ -504,6 +504,32 @@ pub async fn import_backup(
         }
     }
 
+    // Add all existing records to pending_sync so they get pushed to Firebase
+    let entities_to_sync = vec![
+        "Medicamento", "Lote", "Entrada", "Saida",
+        "Fornecedor", "Ala", "Categoria", "Emprestimo",
+        "Inventario", "InventarioItem"
+    ];
+
+    for table in entities_to_sync {
+        let query = format!("SELECT id FROM {}", table);
+        if let Ok(mut stmt) = new_conn.prepare(&query) {
+            let mut ids_to_sync = Vec::new();
+            if let Ok(rows) = stmt.query_map([], |row| row.get::<_, String>(0)) {
+                for id in rows.filter_map(Result::ok) {
+                    ids_to_sync.push(id);
+                }
+            }
+            for id in ids_to_sync {
+                let _ = new_conn.execute(
+                    "INSERT OR REPLACE INTO pending_sync (entity_name, record_id, operation, created_at)
+                     VALUES (?, ?, 'upsert', datetime('now'))",
+                    params![table, id],
+                );
+            }
+        }
+    }
+
     // Swap the connection
     *conn_guard = new_conn;
 
