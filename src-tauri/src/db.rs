@@ -523,7 +523,7 @@ pub async fn import_backup(
             for id in ids_to_sync {
                 let _ = new_conn.execute(
                     "INSERT OR REPLACE INTO pending_sync (entity_name, record_id, operation, created_at)
-                     VALUES (?, ?, 'upsert', datetime('now'))",
+                     VALUES (?, ?, 'update', datetime('now'))",
                     params![table, id],
                 );
             }
