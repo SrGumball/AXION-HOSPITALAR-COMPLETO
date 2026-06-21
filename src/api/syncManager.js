@@ -33,9 +33,9 @@ import { toast } from "sonner";
 // ─── Constantes ───────────────────────────────────────────────────────────────
 
 const ENTITIES = [
+  "Categoria", "Fornecedor", "Ala", "Inventario",
   "Medicamento", "Lote", "Entrada", "Saida",
-  "Fornecedor", "Ala", "Emprestimo", "Categoria",
-  "Inventario", "InventarioItem", "Config",
+  "Emprestimo", "InventarioItem", "Config",
 ];
 
 const BATCH_SIZE = 400;       // máximo do Firestore WriteBatch
