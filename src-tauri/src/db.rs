@@ -511,24 +511,29 @@ pub async fn import_backup(
         "Inventario", "InventarioItem"
     ];
 
+    let tx = new_conn.transaction().map_err(|e| e.to_string())?;
+
     for table in entities_to_sync {
         let query = format!("SELECT id FROM {}", table);
-        if let Ok(mut stmt) = new_conn.prepare(&query) {
-            let mut ids_to_sync = Vec::new();
+        let mut ids_to_sync = Vec::new();
+        if let Ok(mut stmt) = tx.prepare(&query) {
             if let Ok(rows) = stmt.query_map([], |row| row.get::<_, String>(0)) {
                 for id in rows.filter_map(Result::ok) {
                     ids_to_sync.push(id);
                 }
             }
-            for id in ids_to_sync {
-                let _ = new_conn.execute(
-                    "INSERT OR REPLACE INTO pending_sync (entity_name, record_id, operation, created_at)
-                     VALUES (?, ?, 'update', datetime('now'))",
-                    params![table, id],
-                );
-            }
+        }
+        
+        for id in ids_to_sync {
+            let _ = tx.execute(
+                "INSERT OR REPLACE INTO pending_sync (entity_name, record_id, operation, created_at)
+                 VALUES (?, ?, 'update', datetime('now'))",
+                params![table, id],
+            );
         }
     }
+    
+    tx.commit().map_err(|e| e.to_string())?;
 
     // Swap the connection
     *conn_guard = new_conn;
