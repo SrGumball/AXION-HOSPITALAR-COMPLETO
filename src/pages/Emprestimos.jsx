@@ -59,6 +59,7 @@ export default function Emprestimos() {
       const emprestimo = await db.entities.Emprestimo.create(data);
 
       if (data.tipo === "emprestar") {
+        // Emprestar: desconta do estoque
         const lote = lotes.find(l => l.id === data.lote_id);
         if (lote) {
           await db.entities.Lote.update(lote.id, {
@@ -71,6 +72,24 @@ export default function Emprestimos() {
           await db.entities.Medicamento.update(medicamento.id, {
             estoque_atual: Math.max(0, (medicamento.estoque_atual || 0) - data.quantidade),
           });
+        }
+      } else if (data.tipo === "receber") {
+        // Receber: soma ao estoque
+        const medicamento = medicamentos.find(m => m.id === data.medicamento_id);
+        if (medicamento) {
+          await db.entities.Medicamento.update(medicamento.id, {
+            estoque_atual: (medicamento.estoque_atual || 0) + data.quantidade,
+          });
+        }
+
+        // Se informou lote, soma também no lote
+        if (data.lote_id) {
+          const lote = lotes.find(l => l.id === data.lote_id);
+          if (lote) {
+            await db.entities.Lote.update(lote.id, {
+              quantidade_atual: (lote.quantidade_atual || 0) + data.quantidade,
+            });
+          }
         }
       }
 
@@ -238,15 +257,6 @@ export default function Emprestimos() {
     }
   };
 
-  // Medicamentos próximos do vencimento (30 dias)
-  const hoje = new Date();
-  const proximosVencer = lotes
-    .filter(l => {
-      if (l.status !== "disponivel" || l.quantidade_atual <= 0) return false;
-      const diasParaVencer = differenceInDays(parseISO(l.data_validade), hoje);
-      return diasParaVencer > 0 && diasParaVencer <= 30;
-    })
-    .sort((a, b) => parseISO(a.data_validade) - parseISO(b.data_validade));
 
   return (
     <div className="p-6 space-y-6">
@@ -328,53 +338,7 @@ export default function Emprestimos() {
         </div>
       </div>
 
-      {/* Medicamentos Próximos do Vencimento */}
-      {proximosVencer.length > 0 && (
-        <Card className="border-amber-200 bg-amber-50">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2 text-amber-700">
-              <Clock className="w-5 h-5" />
-              Medicamentos Próximos do Vencimento ({proximosVencer.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {proximosVencer.slice(0, 6).map(l => {
-                const diasParaVencer = differenceInDays(parseISO(l.data_validade), hoje);
-                return (
-                  <div key={l.id} className="p-3 bg-white rounded-lg border border-amber-200">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <p className="font-medium text-sm text-slate-800">{l.medicamento_nome}</p>
-                        <p className="text-xs text-slate-500 mt-1">
-                          Lote: {l.numero_lote} • {l.quantidade_atual} un
-                        </p>
-                        <p className="text-xs text-slate-500">
-                          Validade: {format(parseISO(l.data_validade), "dd/MM/yyyy")}
-                        </p>
-                      </div>
-                      <Badge
-                        className={
-                          diasParaVencer <= 7
-                            ? "bg-red-100 text-red-700"
-                            : "bg-amber-100 text-amber-700"
-                        }
-                      >
-                        {diasParaVencer} dias
-                      </Badge>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            {proximosVencer.length > 6 && (
-              <p className="text-xs text-center text-amber-600 mt-3">
-                +{proximosVencer.length - 6} medicamentos próximos ao vencimento
-              </p>
-            )}
-          </CardContent>
-        </Card>
-      )}
+
 
       {/* Filters */}
       <Card className="p-4 border-0 shadow-sm">
@@ -443,9 +407,9 @@ export default function Emprestimos() {
                       }
                     >
                       {emp.tipo === "emprestar" ? (
-                        <><ArrowUpCircle className="w-3 h-3 mr-1" /> Emprestar</>
+                        <><ArrowUpCircle className="w-3 h-3 mr-1" /> Cedido</>
                       ) : (
-                        <><ArrowDownCircle className="w-3 h-3 mr-1" /> Emprestado</>
+                        <><ArrowDownCircle className="w-3 h-3 mr-1" /> Recebido</>
                       )}
                     </Badge>
                   </TableCell>
@@ -573,7 +537,7 @@ export default function Emprestimos() {
             <div className="text-center mb-8 pb-6 border-b-2 border-amber-600">
               <div className="flex justify-between items-center mb-4">
                 <div className="text-left">
-                  <p className="text-amber-600 font-bold text-xl uppercase tracking-tight">FARMÁCIA CLEMENTE FERREIRA</p>
+                  <p className="text-amber-600 font-bold text-xl uppercase tracking-tight">ZORION SAÚDE</p>
                   <p className="text-slate-500 text-xs">Sistema de Controle Farmacêutico</p>
                 </div>
                 <div className="text-right text-[10px] text-slate-400 font-mono">

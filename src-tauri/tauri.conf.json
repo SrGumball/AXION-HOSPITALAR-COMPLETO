@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "farmacia-clemente",
+  "productName": "zorion-saude",
   "version": "0.1.0",
-  "identifier": "com.farmacia.clemente",
+  "identifier": "com.zorion.saude",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:5173",
@@ -13,7 +13,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "Farmacia Clemente",
+        "title": "Zorion Saúde",
         "width": 800,
         "height": 600,
         "resizable": true,

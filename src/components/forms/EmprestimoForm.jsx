@@ -91,8 +91,8 @@ export default function EmprestimoForm({ open, onClose, onSave, medicamentos = [
 
                 <Tabs value={form.tipo} onValueChange={(v) => setForm(p => ({ ...p, tipo: v }))} className="w-full">
                     <TabsList className="grid grid-cols-2 w-full mb-4">
-                        <TabsTrigger value="emprestar">Emprestar para Ala</TabsTrigger>
-                        <TabsTrigger value="receber">Receber de Ala</TabsTrigger>
+                        <TabsTrigger value="emprestar">Emprestar</TabsTrigger>
+                        <TabsTrigger value="receber">Receber</TabsTrigger>
                     </TabsList>
                 </Tabs>
 

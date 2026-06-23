@@ -8,6 +8,7 @@
 
 import { useEffect, useState } from "react";
 import { initializeApp, initSyncManager } from "@/api/syncManager";
+import logo from "../assets/logo.png";
 
 // ─── Tela de loading ──────────────────────────────────────────────────────────
 
@@ -21,19 +22,16 @@ function LoadingScreen({ message, progress, mode }) {
       fontFamily: "'Inter', 'Segoe UI', sans-serif",
       color: "#e2e8f0",
     }}>
-      {/* Logo / Icon */}
       <div style={{
-        width: 80, height: 80, borderRadius: 20,
-        background: "linear-gradient(135deg, #3b82f6, #8b5cf6)",
+        width: 100, height: 100,
         display: "flex", alignItems: "center", justifyContent: "center",
-        fontSize: 36, marginBottom: 28,
-        boxShadow: "0 0 40px rgba(59,130,246,0.4)",
+        marginBottom: 28,
       }}>
-        💊
+        <img src={logo} alt="Logo" style={{ width: "100%", height: "100%", objectFit: "contain", transform: "scale(1.5)" }} />
       </div>
 
       <h1 style={{ fontSize: 22, fontWeight: 700, margin: "0 0 8px", letterSpacing: 0.5 }}>
-        Farmácia Clemente
+        Zorion Saúde
       </h1>
 
       <p style={{ fontSize: 13, color: "#94a3b8", marginBottom: 32 }}>

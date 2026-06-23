@@ -15,7 +15,16 @@ import { toast } from "sonner";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import { Button } from "@/components/ui/button";
-import { Download, Printer, Trash2 } from "lucide-react";
+import { Download, Printer, Trash2, Pencil, CalendarDays } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { invoke } from "@tauri-apps/api/core";
 import { useQueryClient } from "@tanstack/react-query";
@@ -45,6 +54,11 @@ export default function Estoque() {
 
   const [deleteLoteId, setDeleteLoteId] = useState(null);
   const [deleteMedId, setDeleteMedId] = useState(null);
+
+  // Estado para modal de troca de validade
+  const [trocaValidade, setTrocaValidade] = useState(null); // { loteId, numeroLote, dataAtual }
+  const [novaValidade, setNovaValidade] = useState("");
+  const [novoNumeroLote, setNovoNumeroLote] = useState("");
 
   const { data: medicamentos = [], isLoading: loadingMeds } = useQuery({
     queryKey: ['medicamentos'],
@@ -191,8 +205,93 @@ export default function Estoque() {
     }
   };
 
+  const handleAbrirTrocaValidade = (lote) => {
+    setTrocaValidade({ loteId: lote.id, numeroLote: lote.numero_lote, dataAtual: lote.data_validade });
+    const d = safeParseISO(lote.data_validade);
+    setNovaValidade(d ? format(d, "yyyy-MM-dd") : "");
+    setNovoNumeroLote(lote.numero_lote || "");
+  };
+
+  const handleTrocarValidade = async () => {
+    if (!trocaValidade || !novaValidade || !novoNumeroLote) return;
+    try {
+      toast.loading("Atualizando lote...");
+      await invoke("update_entity", {
+        name: "Lote",
+        id: trocaValidade.loteId,
+        data: { data_validade: novaValidade, numero_lote: novoNumeroLote },
+      });
+      toast.dismiss();
+      toast.success(`Lote atualizado! Número: ${novoNumeroLote} | Validade: ${format(new Date(novaValidade + 'T00:00:00'), "dd/MM/yyyy")}`);
+      queryClient.invalidateQueries();
+    } catch (error) {
+      toast.dismiss();
+      toast.error(`Erro ao atualizar lote: ${error}`);
+    } finally {
+      setTrocaValidade(null);
+      setNovaValidade("");
+      setNovoNumeroLote("");
+    }
+  };
+
   return (
     <div className="p-6 space-y-6">
+      {/* Modal de Troca de Validade */}
+      <Dialog open={!!trocaValidade} onOpenChange={(open) => !open && setTrocaValidade(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CalendarDays className="w-5 h-5 text-blue-600" />
+              Trocar Validade do Lote
+            </DialogTitle>
+            <DialogDescription>
+              {trocaValidade && (
+                <>
+                  Lote: <strong>{trocaValidade.numeroLote}</strong>
+                  <br />
+                  Validade atual: <strong>{safeFormatDate(trocaValidade.dataAtual)}</strong>
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="novo-numero-lote">Novo Número do Lote</Label>
+              <Input
+                id="novo-numero-lote"
+                type="text"
+                placeholder="Ex: LT2024-001"
+                value={novoNumeroLote}
+                onChange={(e) => setNovoNumeroLote(e.target.value)}
+                className="text-slate-800"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="nova-validade">Nova Data de Validade</Label>
+              <Input
+                id="nova-validade"
+                type="date"
+                value={novaValidade}
+                onChange={(e) => setNovaValidade(e.target.value)}
+                className="text-slate-800"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setTrocaValidade(null)}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleTrocarValidade}
+              disabled={!novaValidade || !novoNumeroLote}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              Confirmar Troca
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Header */}
       <div className="flex justify-between items-start no-print">
         <div>
@@ -359,7 +458,7 @@ export default function Estoque() {
                           <TableHead>Validade</TableHead>
                           <TableHead className="text-center">Quantidade</TableHead>
                           <TableHead>Status</TableHead>
-                          <TableHead className="w-12"></TableHead>
+                          <TableHead className="w-20 text-center">Ações</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -386,20 +485,34 @@ export default function Estoque() {
                               </Badge>
                             </TableCell>
                             <TableCell>
-                              {(lote.quantidade_atual <= 0 || lote.vencido) && (
+                              <div className="flex items-center gap-1 justify-center">
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  className="h-6 w-6 text-red-400 hover:text-red-600 hover:bg-red-50"
+                                  className="h-6 w-6 text-blue-500 hover:text-blue-700 hover:bg-blue-50"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    setDeleteLoteId(lote.id);
+                                    handleAbrirTrocaValidade(lote);
                                   }}
-                                  title="Apagar lote zerado ou vencido"
+                                  title="Trocar validade deste lote"
                                 >
-                                  <Trash2 className="h-4 w-4" />
+                                  <Pencil className="h-3 w-3" />
                                 </Button>
-                              )}
+                                {(lote.quantidade_atual <= 0 || lote.vencido) && (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6 text-red-400 hover:text-red-600 hover:bg-red-50"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setDeleteLoteId(lote.id);
+                                    }}
+                                    title="Apagar lote zerado ou vencido"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                )}
+                              </div>
                             </TableCell>
                           </TableRow>
                         ))}
@@ -418,7 +531,7 @@ export default function Estoque() {
         <div className="text-center mb-8 pb-6 border-b-2 border-indigo-600">
           <div className="flex justify-between items-center mb-4">
             <div className="text-left">
-              <p className="text-indigo-600 font-bold text-xl uppercase tracking-tight">FARMÁCIA CLEMENTE FERREIRA</p>
+              <p className="text-indigo-600 font-bold text-xl uppercase tracking-tight">ZORION SAÚDE</p>
               <p className="text-slate-500 text-xs">Sistema de Controle Farmacêutico</p>
             </div>
             <div className="text-right text-[10px] text-slate-400 font-mono">

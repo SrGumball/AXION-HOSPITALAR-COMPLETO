@@ -51,7 +51,7 @@ export default function Layout({ children, currentPageName }) {
   });
 
   useEffect(() => {
-    setUser({ full_name: "Administrador", email: "local@farmacia.clemente" });
+    setUser({ full_name: "Administrador", email: "local@zorion.saude" });
   }, []);
 
   // Global Keyboard Shortcuts
@@ -99,10 +99,10 @@ export default function Layout({ children, currentPageName }) {
             {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </Button>
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg overflow-hidden ring-2 ring-blue-500/40">
-              <img src={logo} alt="Logo" className="w-full h-full object-cover" />
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center">
+              <img src={logo} alt="Logo" className="w-full h-full object-cover scale-150" />
             </div>
-            <span className="font-bold text-white">Clemente Ferreira</span>
+            <span className="font-bold text-white">Zorion Saúde</span>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -139,11 +139,11 @@ export default function Layout({ children, currentPageName }) {
 
         {/* Logo */}
         <div className="h-16 px-5 flex items-center gap-3 border-b border-white/5">
-          <div className="w-10 h-10 rounded-xl overflow-hidden ring-2 ring-blue-500/30 shadow-lg shadow-blue-500/20">
-            <img src={logo} alt="Logo" className="w-full h-full object-cover" />
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center">
+            <img src={logo} alt="Logo" className="w-full h-full object-cover scale-150" />
           </div>
           <div>
-            <h1 className="font-bold text-white text-sm leading-tight">Clemente Ferreira</h1>
+            <h1 className="font-bold text-white text-sm leading-tight">Zorion Saúde</h1>
             <p className="text-[10px] uppercase tracking-wider font-semibold text-blue-400">
               Controle de Estoque
             </p>
