@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Plus, Search, HandHelping, ArrowDownCircle, ArrowUpCircle, CheckCircle, Clock, AlertTriangle, FileText, Printer, Trash2 } from "lucide-react";
+import { Plus, Search, HandHelping, ArrowDownCircle, ArrowUpCircle, CheckCircle, Clock, AlertTriangle, FileText, Printer, Trash2, Settings2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { invoke } from "@tauri-apps/api/core";
 import { toast } from "sonner";
@@ -30,7 +30,22 @@ export default function Emprestimos() {
   const [relatorioOpen, setRelatorioOpen] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
   const [filterDate, setFilterDate] = useState(null);
+  const [columns, setColumns] = useState({
+    tipo: true,
+    codigo: true,
+    medicamento: true,
+    lote: true,
+    qtd: true,
+    destinatario: true,
+    data: true,
+    status: true,
+    acoes: true
+  });
   const relatorioRef = useRef(null);
+
+  const toggleColumn = (col) => {
+    setColumns(prev => ({ ...prev, [col]: !prev[col] }));
+  };
 
   const queryClient = useQueryClient();
 
@@ -352,6 +367,40 @@ export default function Emprestimos() {
               className="pl-10"
             />
           </div>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="flex items-center gap-2">
+                <Settings2 className="w-4 h-4 text-slate-500" />
+                <span className="hidden sm:inline">Colunas</span>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-48 p-3" align="end">
+              <p className="font-semibold text-sm mb-3 text-slate-700 border-b pb-2">Mostrar Colunas</p>
+              <div className="space-y-2">
+                {[
+                  { id: 'tipo', label: 'Tipo' },
+                  { id: 'codigo', label: 'Cód.' },
+                  { id: 'medicamento', label: 'Medicamento' },
+                  { id: 'lote', label: 'Lote' },
+                  { id: 'qtd', label: 'Qtd' },
+                  { id: 'destinatario', label: 'Destinatário' },
+                  { id: 'data', label: 'Data Empréstimo' },
+                  { id: 'status', label: 'Status' },
+                  { id: 'acoes', label: 'Ações' },
+                ].map(col => (
+                  <label key={col.id} className="flex items-center space-x-2 text-sm cursor-pointer hover:bg-slate-50 p-1 rounded">
+                    <input
+                      type="checkbox"
+                      className="rounded border-slate-300 text-purple-600 focus:ring-purple-500"
+                      checked={columns[col.id]}
+                      onChange={() => toggleColumn(col.id)}
+                    />
+                    <span className="text-slate-700">{col.label}</span>
+                  </label>
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
           <Tabs value={filterStatus} onValueChange={setFilterStatus}>
             <TabsList>
               <TabsTrigger value="all">Todos</TabsTrigger>
@@ -367,29 +416,29 @@ export default function Emprestimos() {
         <Table>
           <TableHeader>
             <TableRow className="bg-slate-50">
-              <TableHead>Tipo</TableHead>
-              <TableHead className="w-20">Cód.</TableHead>
-              <TableHead>Medicamento</TableHead>
-              <TableHead>Lote</TableHead>
-              <TableHead className="text-center">Qtd</TableHead>
-              <TableHead>Destinatário</TableHead>
-              <TableHead>Data Empréstimo</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-center">Ações</TableHead>
+              {columns.tipo && <TableHead>Tipo</TableHead>}
+              {columns.codigo && <TableHead className="w-20">Cód.</TableHead>}
+              {columns.medicamento && <TableHead>Medicamento</TableHead>}
+              {columns.lote && <TableHead>Lote</TableHead>}
+              {columns.qtd && <TableHead className="text-center">Qtd</TableHead>}
+              {columns.destinatario && <TableHead>Destinatário</TableHead>}
+              {columns.data && <TableHead>Data Empréstimo</TableHead>}
+              {columns.status && <TableHead>Status</TableHead>}
+              {columns.acoes && <TableHead className="text-center">Ações</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               Array(5).fill(0).map((_, i) => (
                 <TableRow key={i}>
-                  {Array(8).fill(0).map((_, j) => (
+                  {Array(Object.values(columns).filter(Boolean).length || 1).fill(0).map((_, j) => (
                     <TableCell key={j}><Skeleton className="h-4 w-20" /></TableCell>
                   ))}
                 </TableRow>
               ))
             ) : filteredEmprestimos.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center py-12">
+                <TableCell colSpan={Object.values(columns).filter(Boolean).length || 1} className="text-center py-12">
                   <HandHelping className="w-12 h-12 text-slate-300 mx-auto mb-3" />
                   <p className="text-slate-500">Nenhum empréstimo encontrado</p>
                 </TableCell>
@@ -397,80 +446,98 @@ export default function Emprestimos() {
             ) : (
               filteredEmprestimos.map((emp) => (
                 <TableRow key={emp.id} className="hover:bg-slate-50/50">
-                  <TableCell>
-                    <Badge
-                      variant="outline"
-                      className={
-                        emp.tipo === "emprestar"
-                          ? "bg-blue-50 text-blue-700 border-blue-200"
-                          : "bg-green-50 text-green-700 border-green-200"
-                      }
-                    >
-                      {emp.tipo === "emprestar" ? (
-                        <><ArrowUpCircle className="w-3 h-3 mr-1" /> Cedido</>
-                      ) : (
-                        <><ArrowDownCircle className="w-3 h-3 mr-1" /> Recebido</>
-                      )}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className="font-mono text-[10px] uppercase">
-                      {medicamentos.find(m => m.id === emp.medicamento_id)?.codigo || "S/C"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="font-medium text-slate-800">
-                    {emp.medicamento_nome}
-                  </TableCell>
-                  <TableCell>
-                    {emp.numero_lote ? (
-                      <Badge variant="outline">{emp.numero_lote}</Badge>
-                    ) : "-"}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <Badge className="bg-purple-100 text-purple-700">{emp.quantidade}</Badge>
-                  </TableCell>
-                  <TableCell className="text-slate-600">{emp.ala_destino_nome || "-"}</TableCell>
-                  <TableCell className="text-slate-600">
-                    {format(parseISO(emp.data_emprestimo), "dd/MM/yyyy")}
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      className={
-                        emp.status === "devolvido"
-                          ? "bg-emerald-100 text-emerald-700"
-                          : "bg-amber-100 text-amber-700"
-                      }
-                    >
-                      {emp.status === "devolvido" ? (
-                        <><CheckCircle className="w-3 h-3 mr-1" /> Devolvido</>
-                      ) : (
-                        <><Clock className="w-3 h-3 mr-1" /> Pendente</>
-                      )}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <div className="flex gap-1">
-                      {emp.status === "pendente" && (
+                  {columns.tipo && (
+                    <TableCell>
+                      <Badge
+                        variant="outline"
+                        className={
+                          emp.tipo === "emprestar"
+                            ? "bg-blue-50 text-blue-700 border-blue-200"
+                            : "bg-green-50 text-green-700 border-green-200"
+                        }
+                      >
+                        {emp.tipo === "emprestar" ? (
+                          <><ArrowUpCircle className="w-3 h-3 mr-1" /> Cedido</>
+                        ) : (
+                          <><ArrowDownCircle className="w-3 h-3 mr-1" /> Recebido</>
+                        )}
+                      </Badge>
+                    </TableCell>
+                  )}
+                  {columns.codigo && (
+                    <TableCell>
+                      <Badge variant="outline" className="font-mono text-[10px] uppercase">
+                        {medicamentos.find(m => m.id === emp.medicamento_id)?.codigo || "S/C"}
+                      </Badge>
+                    </TableCell>
+                  )}
+                  {columns.medicamento && (
+                    <TableCell className="font-medium text-slate-800">
+                      {emp.medicamento_nome}
+                    </TableCell>
+                  )}
+                  {columns.lote && (
+                    <TableCell>
+                      {emp.numero_lote ? (
+                        <Badge variant="outline">{emp.numero_lote}</Badge>
+                      ) : "-"}
+                    </TableCell>
+                  )}
+                  {columns.qtd && (
+                    <TableCell className="text-center">
+                      <Badge className="bg-purple-100 text-purple-700">{emp.quantidade}</Badge>
+                    </TableCell>
+                  )}
+                  {columns.destinatario && (
+                    <TableCell className="text-slate-600">{emp.ala_destino_nome || "-"}</TableCell>
+                  )}
+                  {columns.data && (
+                    <TableCell className="text-slate-600">
+                      {format(parseISO(emp.data_emprestimo), "dd/MM/yyyy")}
+                    </TableCell>
+                  )}
+                  {columns.status && (
+                    <TableCell>
+                      <Badge
+                        className={
+                          emp.status === "devolvido"
+                            ? "bg-emerald-100 text-emerald-700"
+                            : "bg-amber-100 text-amber-700"
+                        }
+                      >
+                        {emp.status === "devolvido" ? (
+                          <><CheckCircle className="w-3 h-3 mr-1" /> Devolvido</>
+                        ) : (
+                          <><Clock className="w-3 h-3 mr-1" /> Pendente</>
+                        )}
+                      </Badge>
+                    </TableCell>
+                  )}
+                  {columns.acoes && (
+                    <TableCell className="text-center">
+                      <div className="flex gap-1 justify-center">
+                        {emp.status === "pendente" && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDevolver(emp)}
+                            className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                          >
+                            Devolver
+                          </Button>
+                        )}
+                        
                         <Button
                           variant="ghost"
-                          size="sm"
-                          onClick={() => handleDevolver(emp)}
-                          className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                          size="icon"
+                          onClick={() => setDeleteId(emp.id)}
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
                         >
-                          Devolver
+                          <Trash2 className="w-4 h-4" />
                         </Button>
-                      )}
-                      
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setDeleteId(emp.id)}
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
+                      </div>
+                    </TableCell>
+                  )}
                 </TableRow>
               ))
             )}
