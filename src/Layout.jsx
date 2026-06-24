@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { createPageUrl } from "./utils";
-import logo from "./assets/logo.png";
+import logo from "./assets/logo-tr.png";
 import SyncStatusBadge from "@/components/SyncStatusBadge";
 
 
@@ -51,7 +51,7 @@ export default function Layout({ children, currentPageName }) {
   });
 
   useEffect(() => {
-    setUser({ full_name: "Administrador", email: "local@zorion.saude" });
+    setUser({ full_name: "Administrador", email: "local@axion.saude" });
   }, []);
 
   // Global Keyboard Shortcuts
@@ -102,7 +102,7 @@ export default function Layout({ children, currentPageName }) {
             <div className="w-8 h-8 rounded-lg flex items-center justify-center">
               <img src={logo} alt="Logo" className="w-full h-full object-cover scale-150" />
             </div>
-            <span className="font-bold text-white">Zorion Saúde</span>
+            <span className="font-bold text-white">Axion Saúde</span>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -143,7 +143,7 @@ export default function Layout({ children, currentPageName }) {
             <img src={logo} alt="Logo" className="w-full h-full object-cover scale-150" />
           </div>
           <div>
-            <h1 className="font-bold text-white text-sm leading-tight">Zorion Saúde</h1>
+            <h1 className="font-bold text-white text-sm leading-tight">Axion Saúde</h1>
             <p className="text-[10px] uppercase tracking-wider font-semibold text-blue-400">
               Controle de Estoque
             </p>

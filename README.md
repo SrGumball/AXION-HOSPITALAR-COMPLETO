@@ -1,10 +1,10 @@
-# Zorion Saúde 💊
+# Axion Saúde 💊
 
 ![Licença](https://img.shields.io/badge/licen%C3%A7a-MIT-green)
 ![Versão](https://img.shields.io/badge/vers%C3%A3o-0.1.0-blue)
 ![Plataformas](https://img.shields.io/badge/plataformas-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey)
 
-**Zorion Saúde** é um sistema moderno de gestão de estoque farmacêutico. Desenvolvido com uma interface rica e responsiva, o aplicativo funciona de forma rápida e segura graças à arquitetura Tauri que une a performance do Rust ao ecossistema do React.
+**Axion Saúde** é um sistema moderno de gestão de estoque farmacêutico. Desenvolvido com uma interface rica e responsiva, o aplicativo funciona de forma rápida e segura graças à arquitetura Tauri que une a performance do Rust ao ecossistema do React.
 
 ## ✨ Recursos
 

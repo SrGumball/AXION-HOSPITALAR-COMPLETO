@@ -8,7 +8,7 @@
 
 import { useEffect, useState } from "react";
 import { initializeApp, initSyncManager } from "@/api/syncManager";
-import logo from "../assets/logo.png";
+import logo from "../assets/logo-tr.png";
 
 // ─── Tela de loading ──────────────────────────────────────────────────────────
 
@@ -31,7 +31,7 @@ function LoadingScreen({ message, progress, mode }) {
       </div>
 
       <h1 style={{ fontSize: 22, fontWeight: 700, margin: "0 0 8px", letterSpacing: 0.5 }}>
-        Zorion Saúde
+        Axion Saúde
       </h1>
 
       <p style={{ fontSize: 13, color: "#94a3b8", marginBottom: 32 }}>

@@ -531,7 +531,7 @@ export default function Estoque() {
         <div className="text-center mb-8 pb-6 border-b-2 border-indigo-600">
           <div className="flex justify-between items-center mb-4">
             <div className="text-left">
-              <p className="text-indigo-600 font-bold text-xl uppercase tracking-tight">ZORION SAÚDE</p>
+              <p className="text-indigo-600 font-bold text-xl uppercase tracking-tight">AXION SAÚDE</p>
               <p className="text-slate-500 text-xs">Sistema de Controle Farmacêutico</p>
             </div>
             <div className="text-right text-[10px] text-slate-400 font-mono">

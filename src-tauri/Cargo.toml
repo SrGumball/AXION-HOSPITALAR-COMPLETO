@@ -1,5 +1,5 @@
 [package]
-name = "zorion-saude"
+name = "axion-saude"
 version = "0.2.0"
 description = "A Tauri App"
 authors = ["you"]

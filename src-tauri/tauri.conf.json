@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "zorion-saude",
+  "productName": "Axion Saude",
   "version": "0.2.0",
-  "identifier": "com.zorion.saude",
+  "identifier": "com.axion.saude",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:5173",
@@ -13,7 +13,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "Zorion Saúde",
+        "title": "Axion Saúde",
         "width": 800,
         "height": 600,
         "resizable": true,
