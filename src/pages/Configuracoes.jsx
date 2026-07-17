@@ -171,7 +171,6 @@ export default function Configuracoes() {
                         </div>
                     </CardContent>
                 </Card>
-                </Card>
             </div>
         </div>
     );
