@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { createPageUrl } from "./utils";
 import logo from "./assets/logo-tr.png";
 import SyncStatusBadge from "@/components/SyncStatusBadge";
+import { useWelcome } from "@/lib/AppInitializer";
 
 
 import {
@@ -28,7 +29,16 @@ import { cn } from "@/lib/utils";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Toaster } from "sonner";
 
-const menuItems = [
+import {
+  Stethoscope,
+  Activity,
+  Users,
+  Syringe,
+  Pill,
+  Bed
+} from "lucide-react";
+
+const estoqueMenu = [
   { name: "Dashboard", icon: LayoutDashboard, page: "Dashboard" },
   { name: "Medicamentos", icon: Package, page: "Medicamentos" },
   { name: "Movimentações", icon: ArrowLeftRight, page: "Movimentacoes" },
@@ -40,6 +50,50 @@ const menuItems = [
   { name: "Relatórios", icon: FileText, page: "Relatorios" },
   { name: "Configurações", icon: Settings, page: "Configuracoes" },
 ];
+
+const recepcaoMenu = [
+  { name: "Painel Principal", icon: LayoutDashboard, page: "Recepcao" },
+  { name: "Admissões", icon: FileText, page: "RecepcaoAdmissoes" },
+];
+
+const enfermagemMenu = [
+  { name: "Painel Enfermagem", icon: LayoutDashboard, page: "Enfermagem" },
+  { name: "Triagem", icon: Activity, page: "EnfermagemTriagem" },
+  { name: "Internações", icon: Bed, page: "EnfermagemLeitos" },
+];
+
+const medicoMenu = [
+  { name: "Painel Médico", icon: LayoutDashboard, page: "Medico" },
+  { name: "Prontuários", icon: FileText, page: "MedicoProntuarios" },
+  { name: "Prescrições", icon: Stethoscope, page: "MedicoPrescricoes" },
+];
+
+const sateliteMenu = [
+  { name: "Painel Satélite", icon: LayoutDashboard, page: "Satelite" },
+  { name: "Dispensação", icon: Pill, page: "SateliteDispensacao" },
+  { name: "Kits Cirúrgicos", icon: Syringe, page: "SateliteKits" },
+];
+
+const terceirizadoMenu = [
+  { name: "Gestão Terceirizada", icon: LayoutDashboard, page: "Terceirizado" },
+  { name: "Contratos", icon: FileText, page: "TerceirizadoContratos" },
+  { name: "Equipe", icon: Users, page: "TerceirizadoEquipe" },
+];
+
+const adminMenu = [
+  { name: "Estrutura Hospitalar", icon: Building2, page: "Configuracoes" },
+];
+
+function getMenuForPage(pageName) {
+  if (pageName === "Recepcao") return { menu: recepcaoMenu, subtitle: "Recepção Principal" };
+  if (pageName === "RecepcaoAdmissoes") return { menu: recepcaoMenu, subtitle: "Recepção Principal" };
+  if (pageName === "Enfermagem") return { menu: enfermagemMenu, subtitle: "Módulo Enfermagem" };
+  if (pageName === "Medico") return { menu: medicoMenu, subtitle: "Corpo Clínico" };
+  if (pageName === "Satelite") return { menu: sateliteMenu, subtitle: "Farmácia Satélite" };
+  if (pageName === "Terceirizado") return { menu: terceirizadoMenu, subtitle: "Parceiros" };
+  if (pageName === "Configuracoes") return { menu: adminMenu, subtitle: "Administração Geral" };
+  return { menu: estoqueMenu, subtitle: "Controle de Estoque" };
+}
 
 export default function Layout({ children, currentPageName }) {
   const navigate = useNavigate();
@@ -79,9 +133,13 @@ export default function Layout({ children, currentPageName }) {
     localStorage.setItem("pharma_dark_mode", JSON.stringify(darkMode));
   }, [darkMode]);
 
+  const { showWelcome } = useWelcome();
+
   const handleLogout = () => {
-    console.log("Logout local");
+    showWelcome();
   };
+
+  const { menu, subtitle } = getMenuForPage(currentPageName);
 
   return (
     <div className="min-h-screen bg-slate-100 dark:bg-slate-950 transition-colors">
@@ -145,7 +203,7 @@ export default function Layout({ children, currentPageName }) {
           <div>
             <h1 className="font-bold text-white text-sm leading-tight">Axion Saúde</h1>
             <p className="text-[10px] uppercase tracking-wider font-semibold text-blue-400">
-              Controle de Estoque
+              {subtitle}
             </p>
           </div>
         </div>
@@ -153,7 +211,7 @@ export default function Layout({ children, currentPageName }) {
         {/* Menu */}
         <div className="flex-1 overflow-y-auto py-4 px-3">
           <nav className="space-y-0.5">
-            {menuItems.map((item) => {
+            {menu.map((item) => {
               const isActive = currentPageName === item.page;
               return (
                 <Link

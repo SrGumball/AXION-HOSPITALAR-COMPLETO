@@ -1,65 +1,50 @@
-# Axion Saúde 💊
+# AXION ERP Hospitalar 🏥
 
-![Licença](https://img.shields.io/badge/licen%C3%A7a-MIT-green)
-![Versão](https://img.shields.io/badge/vers%C3%A3o-0.1.0-blue)
-![Plataformas](https://img.shields.io/badge/plataformas-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey)
+Um sistema integrado e robusto para gestão hospitalar psiquiátrica, desde o controle centralizado de estoque e farmácias satélites, até admissão na recepção, fluxos de enfermagem e corpo clínico.
 
-**Axion Saúde** é um sistema moderno de gestão de estoque farmacêutico. Desenvolvido com uma interface rica e responsiva, o aplicativo funciona de forma rápida e segura graças à arquitetura Tauri que une a performance do Rust ao ecossistema do React.
+## Módulos do Sistema
 
-## ✨ Recursos
+### 🏢 Administração Geral e Estrutura
+- **Gestão de Alas e Setores**: Criação de setores hospitalares divididos por gestão (Terceirizado ou Gestão Interna).
+- **Mapa de Leitos**: Cadastro dinâmico de leitos para cada setor, gerando um mapa visual interativo.
 
-- **Dashboard Intuitivo:** Visão geral em tempo real de entradas, saídas e estado atual do estoque.
-- **Gestão Completa de Estoque:** Cadastro de medicamentos, lotes e categorias com acompanhamento de validades.
-- **Movimentações:** Registro simplificado de entradas e saídas.
-- **Controle de Empréstimos e Fornecedores:** Gerencie o relacionamento e o fluxo com fornecedores e diferentes alas hospitalares.
-- **Relatórios Avançados:** Exporte os dados e gere relatórios precisos do seu inventário.
-- **Multiplataforma:** Suporte nativo para Windows, macOS e Linux com atualizações automatizadas e instaladores prontos.
-- **Offline First:** O banco de dados SQLite fica salvo localmente com total privacidade, não exigindo configurações complexas para iniciar.
+### 👥 Recepção Psiquiátrica
+- **Ficha de Admissão Nível Currículo**: Admissão completa com foto do paciente, dados demográficos, tipo de internação (Voluntária, Involuntária, Compulsória) e risco (Calmo, Agitado, Fuga).
+- **Integração Ponta a Ponta**: Ao admitir o paciente para um setor específico, ele é notificado em tempo real para a fila da Enfermagem.
+- **Visitantes**: Controle de acesso de visitantes por paciente e leito.
 
-## 🚀 Tecnologias Utilizadas
+### 💉 Enfermagem
+- **Painel por Setor**: O plantonista seleciona a Ala/Setor em que está atuando e visualiza apenas os pacientes daquele setor.
+- **Pendências**: Exibe imediatamente os pacientes enviados pela Recepção que aguardam leito.
+- **Alocação de Leitos**: Vincula um paciente aguardando a um leito livre com apenas dois cliques.
+- **Gestão de Alta**: Liberação de leitos e altas de pacientes do setor diretamente pelo mapa visual.
 
-- **Frontend:**
-  - React 18 + Vite
-  - Tailwind CSS + shadcn/ui (Radix UI) para componentes acessíveis e elegantes
-  - Framer Motion para animações suaves
-  - React Router DOM para navegação
-- **Backend/Desktop:**
-  - Tauri v2 (Rust) para criação dos executáveis nativos
-- **Banco de Dados:**
-  - SQLite (Armazenamento local seguro gerenciado pelo Tauri)
+### 📦 Controle de Estoque & Farmácia
+- **Inventário Central**: Gestão de medicamentos, lotes, validades e movimentações completas.
+- **Farmácia Satélite**: Pontos de dispensação distribuídos pelos setores, abastecidos pela farmácia central.
+- **Módulo Médico**: Prescrição eletrônica conectada ao estoque (checa disponibilidade de medicamentos em tempo real).
 
-## 📦 Instalação e Execução Local
+## Tecnologias
 
-Siga as instruções abaixo para executar o projeto no seu ambiente de desenvolvimento.
+- **React.js + Vite** (Frontend Web)
+- **Tauri** (Desktop Wrapper p/ Windows, Mac, Linux)
+- **Tailwind CSS + shadcn/ui** (Interface moderna, limpa e responsiva)
+- **Lucide Icons** (Ícones padronizados)
 
-### Pré-requisitos
-- [Node.js](https://nodejs.org/en/) (Versão 20 ou superior)
-- [Rust](https://www.rust-lang.org/tools/install) (Com Cargo e demais ferramentas de compilação instaladas)
+## Como Executar (Desenvolvimento)
 
-### Passos
-
-1. Instale as dependências do Frontend:
+1. Instale as dependências:
    ```bash
    npm install
    ```
-
-2. Inicie o ambiente de desenvolvimento (Inicia o Vite e o backend Tauri em conjunto):
+2. Rode o ambiente Tauri (Frontend + Backend Rust):
    ```bash
    npm run tauri dev
    ```
 
-## 🛠️ Build Multiplataforma
+## Compilação
 
-Este repositório está configurado para gerar executáveis para **Windows, macOS e Linux** automaticamente através do GitHub Actions! 
-
-Sempre que um novo código for adicionado à branch `main`, as pipelines irão compilar o software para as 3 plataformas e criar uma nova Release.
-
-Para fazer o build manual na sua máquina, rode:
+Para compilar o aplicativo final:
 ```bash
 npm run tauri build
 ```
-O executável final será gerado em `src-tauri/target/release/bundle/`.
-
----
-
-Desenvolvido com dedicação para agilizar a gestão farmacêutica no dia a dia.

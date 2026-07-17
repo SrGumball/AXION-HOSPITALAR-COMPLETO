@@ -1,217 +1,73 @@
 import { useState, useEffect } from "react";
-import { invoke } from "@tauri-apps/api/core";
-import { open as openDialog, save } from "@tauri-apps/plugin-dialog";
 import { toast } from "sonner";
-import { useQueryClient } from "@tanstack/react-query";
-import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-    AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Moon, Sun, Trash2, Save, Upload, HardDrive, Settings, Leaf, Waves, Sparkles, Box, Flower2, CheckCircle2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Trash2, Settings, Building2, Plus, Bed } from "lucide-react";
 
 export default function Configuracoes() {
-    const queryClient = useQueryClient();
-    const [currentTheme, setCurrentTheme] = useState(() => {
-        const saved = localStorage.getItem("pharma_theme");
-        if (saved) return saved;
-        const savedDark = localStorage.getItem("pharma_dark_mode");
-        if (savedDark === "true") return "dark";
-        return "azul";
+
+    // Estrutura do Hospital
+    const [setores, setSetores] = useState(() => {
+        const saved = localStorage.getItem("hospital_estrutura");
+        return saved ? JSON.parse(saved) : [
+            { id: 1, nome: "Ala Feminina", owner: "geral", leitos: [{ id: 101, numero: "01", status: "Livre" }] },
+            { id: 2, nome: "Ala Masculina", owner: "geral", leitos: [] }
+        ];
     });
 
+    const [novoSetor, setNovoSetor] = useState("");
+    const [novoLeito, setNovoLeito] = useState("");
+    const [setorSelecionado, setSetorSelecionado] = useState(null);
+
     useEffect(() => {
-        const isDark = currentTheme === "dark";
-        if (isDark) {
-            document.documentElement.classList.add("dark");
-        } else {
-            document.documentElement.classList.remove("dark");
-        }
+        localStorage.setItem("hospital_estrutura", JSON.stringify(setores));
+    }, [setores]);
 
-        const themes = ["theme-verde", "theme-azul", "theme-roxo", "theme-ardosia", "theme-rosa"];
-        themes.forEach(t => document.documentElement.classList.remove(t));
+    const handleAddSetor = () => {
+        if (!novoSetor) return;
+        setSetores([...setores, { id: Date.now(), nome: novoSetor, owner: "geral", leitos: [] }]);
+        setNovoSetor("");
+    };
 
-        if (!isDark && currentTheme !== "azul") {
-            document.documentElement.classList.add(`theme-${currentTheme}`);
-        }
-
-        localStorage.setItem("pharma_theme", currentTheme);
-        localStorage.setItem("pharma_dark_mode", JSON.stringify(isDark));
-        window.dispatchEvent(new Event("storage"));
-    }, [currentTheme]);
-
-    const themeOptions = [
-        { id: "verde", name: "Verde Suave", icon: Leaf, iconColor: "text-green-500", bgPreview: "bg-green-600", lightPreview: "bg-green-50" },
-        { id: "azul", name: "Azul Oceano", icon: Waves, iconColor: "text-[#3b82f6]", bgPreview: "bg-[#2563eb]", lightPreview: "bg-[#eff6ff]" },
-        { id: "roxo", name: "Roxo Elegante", icon: Sparkles, iconColor: "text-purple-500", bgPreview: "bg-purple-600", lightPreview: "bg-purple-50" },
-        { id: "ardosia", name: "Ardósia", icon: Box, iconColor: "text-slate-500", bgPreview: "bg-slate-600", lightPreview: "bg-slate-50" },
-        { id: "rosa", name: "Rosa", icon: Flower2, iconColor: "text-pink-500", bgPreview: "bg-pink-600", lightPreview: "bg-pink-50" },
-        { id: "dark", name: "Dark Mode", icon: Moon, iconColor: "text-indigo-400", bgPreview: "bg-slate-900", lightPreview: "bg-slate-800" },
-    ];
-
-    const handleResetSystem = async () => {
-        try {
-            toast.loading("Limpando banco de dados e dados locais...");
-            
-            // 1. Limpa o backend SQLite
-            await invoke("clear_all_data");
-            
-            // 2. Limpa o localStorage (cache local do frontend)
-            const PREFIX = "farmacia_";
-            for (let i = localStorage.length - 1; i >= 0; i--) {
-                const key = localStorage.key(i);
-                if (key && key.startsWith(PREFIX)) {
-                    localStorage.removeItem(key);
-                }
+    const handleTransferSector = (setorId, newOwner) => {
+        setSetores(setores.map(s => {
+            if (s.id === setorId) {
+                return { ...s, owner: newOwner };
             }
-            
-            await queryClient.invalidateQueries();
-            toast.dismiss();
-            toast.success("Banco de dados limpo com sucesso!");
-            
-            setTimeout(() => {
-                window.location.reload();
-            }, 1000);
-            
-        } catch (error) {
-            toast.dismiss();
-            console.error(error);
-            toast.error("Erro ao limpar banco de dados");
-        }
+            return s;
+        }));
     };
 
-    const handleDataCleanup = async () => {
-        try {
-            toast.loading("Limpando dados antigos (6 meses)...");
-            const count = await invoke("bulk_cleanup", { monthsOld: 6 });
-            await queryClient.invalidateQueries();
-            toast.dismiss();
-            toast.success(`Limpeza concluída! ${count} registros apagados.`);
-        } catch (error) {
-            toast.dismiss();
-            console.error(error);
-            toast.error("Erro ao realizar limpeza de dados");
-        }
-    };
-
-    // ── BACKUP: usuário escolhe a pasta, nome gerado automaticamente pelo Rust ──
-    const handleBackup = async () => {
-        try {
-            const selectedDir = await openDialog({
-                directory: true,
-                multiple: false,
-                title: "Selecionar pasta para salvar o Backup",
-            });
-
-            if (selectedDir) {
-                toast.loading("Exportando banco de dados SQLite...");
-                const savedPath = await invoke("backup_database", { destPath: selectedDir });
-                toast.dismiss();
-                toast.success(`Backup salvo em: ${savedPath}`);
+    const handleAddLeito = (setorId) => {
+        if (!novoLeito) return;
+        setSetores(setores.map(s => {
+            if (s.id === setorId) {
+                return {
+                    ...s,
+                    leitos: [...s.leitos, { id: Date.now(), numero: novoLeito, status: "Livre" }]
+                };
             }
-        } catch (error) {
-            toast.dismiss();
-            console.error(error);
-            toast.error(`Erro ao salvar backup: ${error.message || String(error)}`);
-        }
+            return s;
+        }));
+        setNovoLeito("");
+        setSetorSelecionado(null);
     };
 
-    // ── IMPORTAR: restaura .db via Rust e depois popula o localStorage ──
-    const handleImportBackup = async () => {
-        try {
-            const selected = await openDialog({
-                directory: false,
-                multiple: false,
-                title: "Selecionar arquivo de Backup (.db)",
-                filters: [{
-                    name: 'Backup SQLite',
-                    extensions: ['db', 'sqlite']
-                }]
-            });
-
-            if (selected) {
-                const isPush = window.confirm(
-                    "Deseja enviar os dados deste backup para o Firebase?\n\n" +
-                    "OK: O backup substituirá a nuvem (Recomendado se este backup for o mais atual).\n" +
-                    "Cancelar: O backup ficará apenas offline e não alterará a nuvem."
-                );
-
-                toast.loading("Restaurando banco de dados SQLite...");
-                
-                // 1. Substitui o pharmacy.db pelo arquivo selecionado
-                const finalPath = typeof selected === 'string' ? selected : (selected.path || String(selected));
-                await invoke("import_backup", { 
-                    backupPath: finalPath, 
-                    pushToFirebase: isPush === true 
-                });
-
-                // 2. Exporta todos os dados do SQLite restaurado para JSON
-                toast.loading("Carregando dados para o sistema...");
-                const jsonString = await invoke("export_all_data_as_json");
-                const allData = JSON.parse(jsonString);
-
-                // --- Tira o Snapshot ANTES de apagar o LocalStorage ---
-                // Isso permite que o botão 'Desfazer Sincronização' reverta a importação!
-                const currentSnapshot = localStorage.getItem("farmacia_last_sync_snapshot"); // we don't really have exportDatabaseToJson in scope here, we can just save it or ignore for now, wait, let's just use JSON stringify over all farmacia_ keys
-                
-                const snap = {};
-                for (let i = 0; i < localStorage.length; i++) {
-                    const k = localStorage.key(i);
-                    if (k && k.startsWith("farmacia_") && !k.includes("last_sync")) {
-                        snap[k.replace("farmacia_", "")] = JSON.parse(localStorage.getItem(k));
-                    }
-                }
-                localStorage.setItem("farmacia_last_sync_snapshot", JSON.stringify(snap));
-                localStorage.setItem("farmacia_last_sync_time", new Date().toISOString());
-
-                // 3. Limpa o localStorage atual (apenas chaves da farmácia)
-                const PREFIX = "farmacia_";
-                for (let i = localStorage.length - 1; i >= 0; i--) {
-                    const key = localStorage.key(i);
-                    // Não exclua o snapshot de segurança que acabamos de salvar!
-                    if (key && key.startsWith(PREFIX) && !key.includes("last_sync")) {
-                        localStorage.removeItem(key);
-                    }
-                }
-
-                // 4. Popula o localStorage com os dados do backup
-                for (const [entityName, entityMap] of Object.entries(allData)) {
-                    if (entityName === "Config") continue; // pula Config
-                    const localMap = {};
-                    for (const [id, item] of Object.entries(entityMap)) {
-                        localMap[id] = {
-                            ...item,
-                            id,
-                            createdAt: item.created_at || item.createdAt || new Date().toISOString(),
-                            updatedAt: item.updated_at || item.updatedAt || new Date().toISOString(),
-                            _synced: false, // Marca como pendente para sincronizar com Firebase
-                        };
-                    }
-                    localStorage.setItem(`${PREFIX}${entityName}`, JSON.stringify(localMap));
-                }
-
-                toast.dismiss();
-                toast.success(`Backup restaurado! Recarregando...`);
-                await queryClient.invalidateQueries();
-                setTimeout(() => {
-                    window.location.reload();
-                }, 1500);
+    const handleRemoveLeito = (setorId, leitoId) => {
+        setSetores(setores.map(s => {
+            if (s.id === setorId) {
+                return { ...s, leitos: s.leitos.filter(l => l.id !== leitoId) };
             }
-        } catch (error) {
-            toast.dismiss();
-            console.error(error);
-            toast.error(`Erro ao restaurar backup: ${error.message || String(error)}`);
-        }
+            return s;
+        }));
     };
+
+    const handleRemoveSetor = (setorId) => {
+        setSetores(setores.filter(s => s.id !== setorId));
+    };
+
+
 
 
     return (
@@ -221,184 +77,100 @@ export default function Configuracoes() {
                     <Settings className="w-8 h-8 text-slate-700 dark:text-slate-300" />
                 </div>
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Configurações</h1>
-                    <p className="text-slate-500 dark:text-slate-400">Gerencie a aparência e os dados do sistema</p>
+                    <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Administrador Geral</h1>
+                    <p className="text-slate-500 dark:text-slate-400">Gestão de Estrutura, Aparência e Dados do sistema</p>
                 </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* ESTRUTURA DO HOSPITAL */}
                 <Card className="md:col-span-2">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
-                            <Sun className="w-5 h-5 text-amber-500" />
-                            Aparência do Sistema
+                            <Building2 className="w-5 h-5 text-indigo-500" />
+                            Estrutura Hospitalar (Setores e Leitos)
                         </CardTitle>
                         <CardDescription>
-                            Personalize as cores e o tema do sistema
+                            Crie novos setores/alas e gerencie os leitos disponíveis.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <div className="mb-4">
-                            <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">Paleta de Cores</p>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                                {themeOptions.map((theme) => {
-                                    const isSelected = currentTheme === theme.id;
-                                    return (
-                                        <div
-                                            key={theme.id}
-                                            onClick={() => setCurrentTheme(theme.id)}
-                                            className={`cursor-pointer rounded-xl overflow-hidden border-2 transition-all ${isSelected ? 'border-green-500 ring-4 ring-green-500/20' : 'border-slate-200 dark:border-slate-700 hover:border-slate-300'}`}
-                                        >
-                                            <div className="flex h-16">
-                                                <div className={`w-1/3 ${theme.bgPreview}`}></div>
-                                                <div className={`w-2/3 ${theme.lightPreview} flex flex-col justify-center px-4 gap-2 relative`}>
-                                                    <div className={`h-2 w-3/4 rounded-full ${theme.bgPreview}`}></div>
-                                                    <div className={`h-1.5 w-1/2 rounded-full ${theme.bgPreview} opacity-40`}></div>
-                                                    {isSelected && (
-                                                        <div className="absolute right-2 top-2 bg-white rounded-full shadow-sm">
-                                                            <CheckCircle2 className="w-4 h-4 text-green-500" />
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                            <div className="bg-white dark:bg-slate-900 p-3 flex items-center gap-2">
-                                                <theme.icon className={`w-4 h-4 ${theme.iconColor}`} />
-                                                <span className="font-bold text-sm text-slate-800 dark:text-slate-100">{theme.name}</span>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <HardDrive className="w-5 h-5 text-blue-500" />
-                            Backup e Restauração
-                        </CardTitle>
-                        <CardDescription>
-                            Salve seus dados (.db) ou restaure um backup anterior
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="flex items-center justify-between p-4 border rounded-lg bg-slate-50 dark:bg-slate-800/50 dark:border-slate-700">
-                            <div>
-                                <p className="font-medium text-slate-800 dark:text-slate-200">Fazer Backup</p>
-                                <p className="text-sm text-slate-500 dark:text-slate-400">Exporta uma cópia do banco de dados SQLite (.db).</p>
-                            </div>
-                            <Button variant="outline" onClick={handleBackup} className="gap-2">
-                                <Save className="w-4 h-4" /> Exportar .db
+                        <div className="flex gap-2 mb-6 max-w-sm">
+                            <Input 
+                                placeholder="Nome do novo setor..." 
+                                value={novoSetor} 
+                                onChange={(e) => setNovoSetor(e.target.value)}
+                            />
+                            <Button onClick={handleAddSetor} className="gap-2 bg-indigo-600 hover:bg-indigo-700 text-white">
+                                <Plus className="w-4 h-4" /> Setor
                             </Button>
                         </div>
 
-                        <div className="flex items-center justify-between p-4 border rounded-lg bg-slate-50 dark:bg-slate-800/50 dark:border-slate-700">
-                            <div>
-                                <p className="font-medium text-slate-800 dark:text-slate-200">Restaurar Backup</p>
-                                <p className="text-sm text-slate-500 dark:text-slate-400">Substitui o banco atual por um arquivo .db anterior.</p>
-                            </div>
-                            <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                    <Button variant="outline" className="gap-2">
-                                        <Upload className="w-4 h-4" /> Importar .db
-                                    </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                        <AlertDialogTitle>Restaurar Backup?</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                            Atenção: Todos os dados atuais serão substituídos pelos dados do arquivo .db selecionado.
-                                            Esta ação não pode ser desfeita.
-                                        </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                        <AlertDialogAction onClick={handleImportBackup} className="bg-blue-600 hover:bg-blue-700 text-white border-0">
-                                            Confirmar Restauração
-                                        </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {setores.map(setor => (
+                                <div key={setor.id} className="border border-slate-200 dark:border-slate-800 rounded-xl p-4 bg-slate-50 dark:bg-slate-900/50">
+                                    <div className="flex justify-between items-start mb-4">
+                                        <div>
+                                            <h3 className="font-bold text-slate-700 dark:text-slate-200">{setor.nome}</h3>
+                                            <div className="flex items-center gap-2 mt-1">
+                                                <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold uppercase ${setor.owner === 'terceirizado' ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'}`}>
+                                                    {setor.owner === 'terceirizado' ? 'Terceirizado' : 'Gestão Geral'}
+                                                </span>
+                                                <select 
+                                                    className="text-[10px] bg-transparent border border-slate-200 dark:border-slate-700 rounded px-1 py-0.5 text-slate-500"
+                                                    value={setor.owner || 'geral'}
+                                                    onChange={(e) => handleTransferSector(setor.id, e.target.value)}
+                                                >
+                                                    <option value="geral">Transferir para Adm Geral</option>
+                                                    <option value="terceirizado">Transferir para Terceirizado</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <Button variant="ghost" size="sm" onClick={() => handleRemoveSetor(setor.id)} className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20">
+                                            <Trash2 className="w-4 h-4" />
+                                        </Button>
+                                    </div>
+                                    
+                                    <div className="flex gap-2 mb-4">
+                                        {setorSelecionado === setor.id ? (
+                                            <>
+                                                <Input 
+                                                    placeholder="Nº/Nome do Leito" 
+                                                    value={novoLeito}
+                                                    onChange={(e) => setNovoLeito(e.target.value)}
+                                                    className="h-8 text-sm"
+                                                />
+                                                <Button size="sm" onClick={() => handleAddLeito(setor.id)} className="h-8">Adicionar</Button>
+                                                <Button size="sm" variant="ghost" onClick={() => setSetorSelecionado(null)} className="h-8">Cancelar</Button>
+                                            </>
+                                        ) : (
+                                            <Button variant="outline" size="sm" onClick={() => setSetorSelecionado(setor.id)} className="w-full text-sm border-dashed">
+                                                <Plus className="w-3.5 h-3.5 mr-1" /> Adicionar Leito
+                                            </Button>
+                                        )}
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        {setor.leitos.length === 0 ? (
+                                            <p className="text-xs text-slate-500 text-center py-2">Nenhum leito cadastrado.</p>
+                                        ) : setor.leitos.map(leito => (
+                                            <div key={leito.id} className="flex justify-between items-center bg-white dark:bg-slate-800 p-2 rounded-lg border border-slate-100 dark:border-slate-700">
+                                                <div className="flex items-center gap-2">
+                                                    <Bed className="w-4 h-4 text-emerald-500" />
+                                                    <span className="text-sm font-medium">{leito.numero}</span>
+                                                    <span className="text-[10px] bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 px-1.5 py-0.5 rounded uppercase">{leito.status}</span>
+                                                </div>
+                                                <button onClick={() => handleRemoveLeito(setor.id, leito.id)} className="text-slate-400 hover:text-red-500">
+                                                    <Trash2 className="w-3.5 h-3.5" />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     </CardContent>
                 </Card>
-
-                <Card className="md:col-span-2 border-red-200 dark:border-red-900">
-                    <CardHeader className="bg-red-50 dark:bg-red-950/20 rounded-t-lg">
-                        <CardTitle className="flex items-center gap-2 text-red-700 dark:text-red-400">
-                            <Trash2 className="w-5 h-5" />
-                            Gerenciamento de Dados
-                        </CardTitle>
-                        <CardDescription className="text-red-600 dark:text-red-300">
-                            Área de perigo. Ações aqui não podem ser desfeitas.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4 pt-6">
-                        <div className="flex flex-col sm:flex-row gap-4 items-center justify-between p-4 border border-red-100 dark:border-red-900 rounded-lg bg-white dark:bg-slate-800/50">
-                            <div>
-                                <p className="font-medium text-slate-800 dark:text-slate-200">Limpar Dados Antigos (+6 meses)</p>
-                                <p className="text-sm text-slate-500 dark:text-slate-400">
-                                    Apaga registros de mais de 6 meses que estejam com estoque zerado no momento.
-                                </p>
-                            </div>
-                            <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                    <Button variant="outline" className="text-amber-600 border-amber-200 hover:bg-amber-50 hover:text-amber-700 w-full sm:w-auto">
-                                        Iniciar Limpeza Segura
-                                    </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                        <AlertDialogTitle>Limpar dados antigos?</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                            Esta ação irá apagar definitivamente lotes e medicamentos com mais de 6 meses
-                                            cujo estoque atual seja 0. Tem certeza?
-                                        </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                        <AlertDialogAction onClick={handleDataCleanup} className="bg-amber-600 hover:bg-amber-700 text-white border-0">
-                                            Confirmar Limpeza
-                                        </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
-                        </div>
-
-                        <div className="flex flex-col sm:flex-row gap-4 items-center justify-between p-4 border border-red-100 dark:border-red-900 rounded-lg bg-red-50 dark:bg-red-900/10">
-                            <div>
-                                <p className="font-bold text-red-700 dark:text-red-400">Limpar TODO o Banco de Dados</p>
-                                <p className="text-sm text-red-600 dark:text-red-300">
-                                    Isso irá apagar permanentemente todos os medicamentos, lotes, entradas e saídas.
-                                </p>
-                            </div>
-                            <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                    <Button variant="destructive" className="w-full sm:w-auto gap-2">
-                                        <Trash2 className="w-4 h-4" />
-                                        Limpar Banco de Dados
-                                    </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                        <AlertDialogTitle>Você tem certeza absoluta?</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                            Esta ação irá apagar <span className="font-bold underline">permanentemente todos os dados</span> de medicamentos, lotes, entradas, saídas e movimentações.
-                                            Isso é recomendado apenas para limpar o sistema de testes antes de usar na produção.
-                                        </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                        <AlertDialogAction onClick={handleResetSystem} className="bg-red-600 hover:bg-red-700 text-white border-0">
-                                            Confirmar Destruição de Dados
-                                        </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
-                        </div>
-                    </CardContent>
                 </Card>
             </div>
         </div>

@@ -1,6 +1,8 @@
-import { Link } from "react-router-dom";
+import { useWelcome } from "./AppInitializer";
 
 export default function PageNotFound() {
+  const { showWelcome } = useWelcome();
+
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-8">
       <h1 className="text-6xl font-bold text-gray-300 mb-4">404</h1>
@@ -10,12 +12,12 @@ export default function PageNotFound() {
       <p className="text-gray-500 mb-6 max-w-md">
         A página que você está procurando não existe ou foi movida.
       </p>
-      <Link
-        to="/"
+      <button
+        onClick={showWelcome}
         className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
       >
-        Voltar ao Dashboard
-      </Link>
+        Voltar à Seleção de Módulos
+      </button>
     </div>
   );
 }

@@ -59,6 +59,12 @@ import Movimentacoes from './pages/Movimentacoes';
 import Relatorios from './pages/Relatorios';
 import Saidas from './pages/Saidas';
 import Vencimentos from './pages/Vencimentos';
+import Recepcao from './pages/Recepcao';
+import RecepcaoAdmissoes from './pages/RecepcaoAdmissoes';
+import Enfermagem from './pages/Enfermagem';
+import Medico from './pages/Medico';
+import Satelite from './pages/Satelite';
+import Terceirizado from './pages/Terceirizado';
 import __Layout from './Layout.jsx';
 
 
@@ -75,6 +81,12 @@ export const PAGES = {
   "Relatorios": Relatorios,
   "Saidas": Saidas,
   "Vencimentos": Vencimentos,
+  "Recepcao": Recepcao,
+  "RecepcaoAdmissoes": RecepcaoAdmissoes,
+  "Enfermagem": Enfermagem,
+  "Medico": Medico,
+  "Satelite": Satelite,
+  "Terceirizado": Terceirizado,
 }
 
 export const pagesConfig = {

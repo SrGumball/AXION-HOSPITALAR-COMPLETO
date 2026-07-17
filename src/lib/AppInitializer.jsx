@@ -6,9 +6,14 @@
  *   - Baixar dados iniciais do Firebase (primeira execução)
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, createContext, useContext } from "react";
 import { initializeApp, initSyncManager } from "@/api/syncManager";
 import logo from "../assets/logo-tr.png";
+import { WelcomeScreen } from "./WelcomeScreen";
+
+// ─── Contexto global para controle da WelcomeScreen ───────────────────────────
+export const WelcomeContext = createContext({ showWelcome: () => {} });
+export const useWelcome = () => useContext(WelcomeContext);
 
 // ─── Tela de loading ──────────────────────────────────────────────────────────
 
@@ -78,6 +83,7 @@ function LoadingScreen({ message, progress, mode }) {
 export function AppInitializer({ children }) {
   const [ready, setReady] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [showWelcome, setShowWelcome] = useState(false);
   const [message, setMessage] = useState("Verificando banco de dados local…");
   const [progress, setProgress] = useState(0);
   const [mode, setMode] = useState(null);
@@ -98,10 +104,10 @@ export function AppInitializer({ children }) {
           setMessage("Dados locais encontrados. Abrindo sistema…");
           setProgress(100);
           setMode("local");
-          // Abre imediatamente
+          // Exibe WelcomeScreen antes de abrir
           setTimeout(() => {
             setLoading(false);
-            setReady(true);
+            setShowWelcome(true);
           }, 400);
         } else if (result.mode === "firebase") {
           // initializeApp já fez a carga completa com progress interno
@@ -110,7 +116,7 @@ export function AppInitializer({ children }) {
           setMode("firebase");
           setTimeout(() => {
             setLoading(false);
-            setReady(true);
+            setShowWelcome(true);
           }, 600);
         } else {
           // Erro ou modo desconhecido — abre mesmo assim
@@ -118,7 +124,7 @@ export function AppInitializer({ children }) {
           setProgress(100);
           setTimeout(() => {
             setLoading(false);
-            setReady(true);
+            setShowWelcome(true);
           }, 500);
         }
 
@@ -131,7 +137,7 @@ export function AppInitializer({ children }) {
         setProgress(100);
         setTimeout(() => {
           setLoading(false);
-          setReady(true);
+          setShowWelcome(true);
         }, 500);
       }
     }
@@ -144,5 +150,35 @@ export function AppInitializer({ children }) {
     return <LoadingScreen message={message} progress={progress} mode={mode} />;
   }
 
-  return children;
+  if (showWelcome) {
+    return (
+      <WelcomeScreen
+        onEnter={(modKey) => {
+          setShowWelcome(false);
+          setReady(true);
+          
+          // Mapeamento de modulos para rotas
+          const routeMap = {
+            estoque_farmacia: "#/Dashboard",
+            recepcao: "#/Recepcao",
+            enfermagem: "#/Enfermagem",
+            medico: "#/Medico",
+            administrador: "#/Configuracoes",
+            farmacia_satelite: "#/Satelite",
+            terceirizado: "#/Terceirizado"
+          };
+          
+          if (routeMap[modKey]) {
+            window.location.hash = routeMap[modKey];
+          }
+        }}
+      />
+    );
+  }
+
+  return (
+    <WelcomeContext.Provider value={{ showWelcome: () => setShowWelcome(true) }}>
+      {children}
+    </WelcomeContext.Provider>
+  );
 }
