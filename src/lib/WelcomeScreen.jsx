@@ -105,49 +105,9 @@ const IconTerceirizado = ({ color }) => (
 
 const MODULES = [
   {
-    key: "recepcao",
-    label: "Recepção",
-    sub: "Atendimento & Admissão",
-    color: "#34d399",
-    glow: "rgba(52,211,153,0.3)",
-    border: "rgba(52,211,153,0.4)",
-    bg: "rgba(52,211,153,0.08)",
-    Icon: IconRecepcao,
-  },
-  {
-    key: "medico",
-    label: "Médico",
-    sub: "Prontuários & Prescrições",
-    color: "#60a5fa",
-    glow: "rgba(96,165,250,0.3)",
-    border: "rgba(96,165,250,0.4)",
-    bg: "rgba(96,165,250,0.08)",
-    Icon: IconMedico,
-  },
-  {
-    key: "enfermagem",
-    label: "Enfermagem",
-    sub: "Cuidados & Procedimentos",
-    color: "#f472b6",
-    glow: "rgba(244,114,182,0.3)",
-    border: "rgba(244,114,182,0.4)",
-    bg: "rgba(244,114,182,0.08)",
-    Icon: IconEnfermagem,
-  },
-  {
-    key: "farmacia_satelite",
-    label: "Farmácia Satélite",
-    sub: "Dispensação por Setor",
-    color: "#fb923c",
-    glow: "rgba(251,146,60,0.3)",
-    border: "rgba(251,146,60,0.4)",
-    bg: "rgba(251,146,60,0.08)",
-    Icon: IconFarmaciaSatelite,
-  },
-  {
     key: "estoque_farmacia",
-    label: "Estoque Farmácia",
-    sub: "Gestão de Inventário",
+    label: "Estoque",
+    sub: "Gestão e Envio para Satélite",
     color: "#a78bfa",
     glow: "rgba(167,139,250,0.3)",
     border: "rgba(167,139,250,0.4)",
@@ -155,15 +115,25 @@ const MODULES = [
     Icon: IconEstoqueFarmacia,
   },
   {
-    key: "administrador",
-    label: "Administrador",
-    sub: "Gestão & Configurações",
-    color: "#fbbf24",
-    glow: "rgba(251,191,36,0.3)",
-    border: "rgba(251,191,36,0.4)",
-    bg: "rgba(251,191,36,0.08)",
-    Icon: IconAdministrador,
+    key: "farmacia_satelite",
+    label: "Farmácia Satélite",
+    sub: "Dispensação para Paciente",
+    color: "#fb923c",
+    glow: "rgba(251,146,60,0.3)",
+    border: "rgba(251,146,60,0.4)",
+    bg: "rgba(251,146,60,0.08)",
+    Icon: IconFarmaciaSatelite,
   },
+  {
+    key: "responsavel_tecnico",
+    label: "Responsável Técnico",
+    sub: "Gestão e Usuários",
+    color: "#34d399",
+    glow: "rgba(52,211,153,0.3)",
+    border: "rgba(52,211,153,0.4)",
+    bg: "rgba(52,211,153,0.08)",
+    Icon: IconAdministrador,
+  }
 ];
 
 // ─── Card de módulo ───────────────────────────────────────────────────────────
@@ -259,21 +229,8 @@ export function WelcomeScreen({ onEnter }) {
   }, []);
 
   const handleModuleClick = (mod) => {
-    if (mod.key === "administrador") {
-      setShowAdminMenu(true);
-      return;
-    }
-    if (mod.key === "enfermagem") {
-      setShowEnfermagemMenu(true);
-      return;
-    }
     setExiting(true);
     setTimeout(() => onEnter(mod.key), 550);
-  };
-
-  const handleSubOptionClick = (key) => {
-    setExiting(true);
-    setTimeout(() => onEnter(key), 550);
   };
 
   return (
@@ -344,170 +301,34 @@ export function WelcomeScreen({ onEnter }) {
         flexDirection: "column",
         alignItems: "center",
       }}>
-        {showAdminMenu ? (
-          <>
-            <div style={{
-              fontSize: 16,
-              color: "#94a3b8",
-              marginBottom: 44,
-              letterSpacing: 0.5,
-              fontWeight: 500,
-              textTransform: "uppercase"
-            }}>
-              Selecione o tipo de acesso
-            </div>
-            <div style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(2, 160px)",
-              gap: 20,
-              perspective: "1000px"
-            }}>
-              <ModuleCard
-                mod={{
-                  key: "administrador",
-                  label: "Adm Geral",
-                  sub: "Gestão do Sistema",
-                  color: "#fbbf24",
-                  glow: "rgba(251,191,36,0.3)",
-                  border: "rgba(251,191,36,0.4)",
-                  bg: "rgba(251,191,36,0.08)",
-                  Icon: IconAdministrador,
-                }}
-                delay={0}
-                visible={visible && !exiting}
-                onClick={() => handleSubOptionClick("administrador")}
-              />
-              <ModuleCard
-                mod={{
-                  key: "terceirizado",
-                  label: "Adm Terceirizado",
-                  sub: "Gestão de Parceiros",
-                  color: "#94a3b8",
-                  glow: "rgba(148,163,184,0.3)",
-                  border: "rgba(148,163,184,0.4)",
-                  bg: "rgba(148,163,184,0.08)",
-                  Icon: IconTerceirizado,
-                }}
-                delay={100}
-                visible={visible && !exiting}
-                onClick={() => handleSubOptionClick("terceirizado")}
-              />
-            </div>
-            <button
-              onClick={() => setShowAdminMenu(false)}
-              style={{
-                marginTop: 40,
-                padding: "8px 24px",
-                background: "transparent",
-                border: "1px solid rgba(255,255,255,0.1)",
-                color: "#94a3b8",
-                borderRadius: 20,
-                cursor: "pointer",
-                transition: "all 0.2s"
-              }}
-              onMouseEnter={(e) => { e.target.style.background = "rgba(255,255,255,0.05)"; e.target.style.color = "#fff"; }}
-              onMouseLeave={(e) => { e.target.style.background = "transparent"; e.target.style.color = "#94a3b8"; }}
-            >
-              Voltar
-            </button>
-          </>
-        ) : showEnfermagemMenu ? (
-          <>
-            <div style={{
-              fontSize: 16,
-              color: "#94a3b8",
-              marginBottom: 44,
-              letterSpacing: 0.5,
-              fontWeight: 500,
-              textTransform: "uppercase"
-            }}>
-              Selecione a modalidade
-            </div>
-            <div style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(2, 160px)",
-              gap: 20,
-              perspective: "1000px"
-            }}>
-              <ModuleCard
-                mod={{
-                  key: "enfermagem",
-                  label: "Enf. Geral",
-                  sub: "Equipe Interna",
-                  color: "#f472b6",
-                  glow: "rgba(244,114,182,0.3)",
-                  border: "rgba(244,114,182,0.4)",
-                  bg: "rgba(244,114,182,0.08)",
-                  Icon: IconEnfermagem,
-                }}
-                delay={0}
-                visible={visible && !exiting}
-                onClick={() => handleSubOptionClick("enfermagem")}
-              />
-              <ModuleCard
-                mod={{
-                  key: "enfermagem", // routes to same page but we can differentiate later if needed
-                  label: "Enf. Terceirizada",
-                  sub: "Plantão Externo",
-                  color: "#f472b6",
-                  glow: "rgba(244,114,182,0.3)",
-                  border: "rgba(244,114,182,0.4)",
-                  bg: "rgba(244,114,182,0.08)",
-                  Icon: IconEnfermagem,
-                }}
-                delay={100}
-                visible={visible && !exiting}
-                onClick={() => handleSubOptionClick("enfermagem")}
-              />
-            </div>
-            <button
-              onClick={() => setShowEnfermagemMenu(false)}
-              style={{
-                marginTop: 40,
-                padding: "8px 24px",
-                background: "transparent",
-                border: "1px solid rgba(255,255,255,0.1)",
-                color: "#94a3b8",
-                borderRadius: 20,
-                cursor: "pointer",
-                transition: "all 0.2s"
-              }}
-              onMouseEnter={(e) => { e.target.style.background = "rgba(255,255,255,0.05)"; e.target.style.color = "#fff"; }}
-              onMouseLeave={(e) => { e.target.style.background = "transparent"; e.target.style.color = "#94a3b8"; }}
-            >
-              Voltar
-            </button>
-          </>
-        ) : (
-          <>
-            <div style={{
-              fontSize: 16,
-              color: "#475569",
-              marginBottom: 44,
-              letterSpacing: 0.5,
-              fontWeight: 500,
-            }}>
-              Selecione o módulo para acessar
-            </div>
+        <>
+          <div style={{
+            fontSize: 16,
+            color: "#475569",
+            marginBottom: 44,
+            letterSpacing: 0.5,
+            fontWeight: 500,
+          }}>
+            Selecione o módulo para acessar
+          </div>
 
-            <div style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(3, 160px)",
-              gap: 20,
-              perspective: "1000px"
-            }}>
-              {MODULES.map((mod, i) => (
-                <ModuleCard
-                  key={mod.key}
-                  mod={mod}
-                  delay={100 + i * 80}
-                  visible={visible && !exiting}
-                  onClick={() => handleModuleClick(mod)}
-                />
-              ))}
-            </div>
-          </>
-        )}
+          <div style={{
+            display: "flex",
+            justifyContent: "center",
+            gap: 20,
+            perspective: "1000px"
+          }}>
+            {MODULES.map((mod, i) => (
+              <ModuleCard
+                key={mod.key}
+                mod={mod}
+                delay={100 + i * 80}
+                visible={visible && !exiting}
+                onClick={() => handleModuleClick(mod)}
+              />
+            ))}
+          </div>
+        </>
       </div>
 
       {/* Linha divisória + rodapé */}

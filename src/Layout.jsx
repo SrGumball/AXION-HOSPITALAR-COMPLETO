@@ -51,48 +51,19 @@ const estoqueMenu = [
   { name: "Configurações", icon: Settings, page: "Configuracoes" },
 ];
 
-const recepcaoMenu = [
-  { name: "Painel Principal", icon: LayoutDashboard, page: "Recepcao" },
-  { name: "Admissões", icon: FileText, page: "RecepcaoAdmissoes" },
-];
-
-const enfermagemMenu = [
-  { name: "Painel Enfermagem", icon: LayoutDashboard, page: "Enfermagem" },
-  { name: "Triagem", icon: Activity, page: "EnfermagemTriagem" },
-  { name: "Internações", icon: Bed, page: "EnfermagemLeitos" },
-];
-
-const medicoMenu = [
-  { name: "Painel Médico", icon: LayoutDashboard, page: "Medico" },
-  { name: "Prontuários", icon: FileText, page: "MedicoProntuarios" },
-  { name: "Prescrições", icon: Stethoscope, page: "MedicoPrescricoes" },
-];
-
 const sateliteMenu = [
   { name: "Painel Satélite", icon: LayoutDashboard, page: "Satelite" },
   { name: "Dispensação", icon: Pill, page: "SateliteDispensacao" },
-  { name: "Kits Cirúrgicos", icon: Syringe, page: "SateliteKits" },
 ];
 
-const terceirizadoMenu = [
-  { name: "Gestão Terceirizada", icon: LayoutDashboard, page: "Terceirizado" },
-  { name: "Contratos", icon: FileText, page: "TerceirizadoContratos" },
-  { name: "Equipe", icon: Users, page: "TerceirizadoEquipe" },
-];
-
-const adminMenu = [
-  { name: "Estrutura Hospitalar", icon: Building2, page: "Configuracoes" },
+const rtMenu = [
+  { name: "Gestão RT", icon: Users, page: "ResponsavelTecnico" },
 ];
 
 function getMenuForPage(pageName) {
-  if (pageName === "Recepcao") return { menu: recepcaoMenu, subtitle: "Recepção Principal" };
-  if (pageName === "RecepcaoAdmissoes") return { menu: recepcaoMenu, subtitle: "Recepção Principal" };
-  if (pageName === "Enfermagem") return { menu: enfermagemMenu, subtitle: "Módulo Enfermagem" };
-  if (pageName === "Medico") return { menu: medicoMenu, subtitle: "Corpo Clínico" };
-  if (pageName === "Satelite") return { menu: sateliteMenu, subtitle: "Farmácia Satélite" };
-  if (pageName === "Terceirizado") return { menu: terceirizadoMenu, subtitle: "Parceiros" };
-  if (pageName === "Configuracoes") return { menu: adminMenu, subtitle: "Administração Geral" };
-  return { menu: estoqueMenu, subtitle: "Controle de Estoque" };
+  if (pageName?.startsWith("Satelite")) return { menu: sateliteMenu, subtitle: "Farmácia Satélite" };
+  if (pageName === "ResponsavelTecnico") return { menu: rtMenu, subtitle: "Responsável Técnico (RT)" };
+  return { menu: estoqueMenu, subtitle: "Estoque Central" };
 }
 
 export default function Layout({ children, currentPageName }) {

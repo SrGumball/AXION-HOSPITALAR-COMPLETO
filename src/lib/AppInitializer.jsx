@@ -160,12 +160,8 @@ export function AppInitializer({ children }) {
           // Mapeamento de modulos para rotas
           const routeMap = {
             estoque_farmacia: "#/Dashboard",
-            recepcao: "#/Recepcao",
-            enfermagem: "#/Enfermagem",
-            medico: "#/Medico",
-            administrador: "#/Configuracoes",
             farmacia_satelite: "#/Satelite",
-            terceirizado: "#/Terceirizado"
+            responsavel_tecnico: "#/ResponsavelTecnico"
           };
           
           if (routeMap[modKey]) {

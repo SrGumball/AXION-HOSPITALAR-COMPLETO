@@ -65,6 +65,7 @@ import Enfermagem from './pages/Enfermagem';
 import Medico from './pages/Medico';
 import Satelite from './pages/Satelite';
 import Terceirizado from './pages/Terceirizado';
+import ResponsavelTecnico from './pages/ResponsavelTecnico';
 import __Layout from './Layout.jsx';
 
 
@@ -87,6 +88,7 @@ export const PAGES = {
   "Medico": Medico,
   "Satelite": Satelite,
   "Terceirizado": Terceirizado,
+  "ResponsavelTecnico": ResponsavelTecnico,
 }
 
 export const pagesConfig = {
