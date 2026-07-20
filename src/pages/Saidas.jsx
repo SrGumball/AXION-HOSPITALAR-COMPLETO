@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { db } from "@/api/db";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -43,6 +43,12 @@ export default function Saidas({ isTab = false }) {
   const [deleteId, setDeleteId] = useState(null);
   const [editData, setEditData] = useState(null);
   const [filterDate, setFilterDate] = useState(null);
+  const [displayCount, setDisplayCount] = useState(50);
+
+  // Reset display count when filters change
+  useEffect(() => {
+    setDisplayCount(50);
+  }, [search, filterDate]);
 
   useEffect(() => {
     if (searchParams.get("action") === "new") {
@@ -138,21 +144,14 @@ export default function Saidas({ isTab = false }) {
       // 1. Criar a saída
       const saida = await db.entities.Saida.create(data);
 
-      // 2. Atualizar quantidade do lote
-      const lote = lotes.find(l => l.id === data.lote_id);
-      if (lote) {
-        const novaQuantidade = (lote.quantidade_atual || 0) - data.quantidade;
-        await db.entities.Lote.update(lote.id, {
-          quantidade_atual: Math.max(0, novaQuantidade),
-          status: novaQuantidade <= 0 ? "esgotado" : lote.status,
-        });
-      }
+      // 2. Atualizar quantidade do lote (Removido: itens na satélite já foram deduzidos do lote no momento da transferência)
 
-      // 3. Atualizar estoque do medicamento
+
+      // 3. Atualizar estoque do medicamento (Apenas Satélite)
       const medicamento = medicamentos.find(m => m.id === data.medicamento_id);
       if (medicamento) {
         await db.entities.Medicamento.update(medicamento.id, {
-          estoque_atual: Math.max(0, (medicamento.estoque_atual || 0) - data.quantidade),
+          estoque_satelite: Math.max(0, (medicamento.estoque_satelite || 0) - data.quantidade),
         });
       }
 
@@ -173,22 +172,15 @@ export default function Saidas({ isTab = false }) {
 
   const deleteSaidaMutation = useMutation({
     mutationFn: async (saida) => {
-      // 1. Reverter estoque do medicamento
+      // 1. Reverter estoque do medicamento (Apenas Satélite)
       const medicamento = medicamentos.find(m => m.id === saida.medicamento_id);
       if (medicamento) {
         await db.entities.Medicamento.update(medicamento.id, {
-          estoque_atual: (medicamento.estoque_atual || 0) + saida.quantidade,
+          estoque_satelite: (medicamento.estoque_satelite || 0) + saida.quantidade,
         });
       }
 
-      // 2. Reverter quantidade do lote
-      const lote = lotes.find(l => l.id === saida.lote_id);
-      if (lote) {
-        await db.entities.Lote.update(lote.id, {
-          quantidade_atual: (lote.quantidade_atual || 0) + saida.quantidade,
-          status: "disponivel",
-        });
-      }
+      // 2. Reverter quantidade do lote (Removido: lote não é mais atualizado nas saídas)
 
       // 3. Deletar a saída
       await db.entities.Saida.delete(saida.id);
@@ -213,53 +205,29 @@ export default function Saidas({ isTab = false }) {
 
       // Se mudou o medicamento ou o lote, revertemos a saída inteira e aplicamos a nova
       if (oldSaida.medicamento_id !== data.medicamento_id || oldSaida.lote_id !== data.lote_id) {
-        // 1. Reverter antiga do estoque
+        // 1. Reverter antiga da satélite
         const oldMed = medicamentos.find(m => m.id === oldSaida.medicamento_id);
         if (oldMed) {
           await db.entities.Medicamento.update(oldMed.id, {
-            estoque_atual: (oldMed.estoque_atual || 0) + oldSaida.quantidade,
-          });
-        }
-        // 2. Reverter antigo do lote
-        const oldLote = lotes.find(l => l.id === oldSaida.lote_id);
-        if (oldLote) {
-          await db.entities.Lote.update(oldLote.id, {
-            quantidade_atual: (oldLote.quantidade_atual || 0) + oldSaida.quantidade,
-            status: "disponivel",
+            estoque_satelite: (oldMed.estoque_satelite || 0) + oldSaida.quantidade,
           });
         }
 
-        // 3. Aplicar nova no estoque e lote (seja os mesmos ou diferentes com mesma lógica)
+        // 3. Aplicar nova na satélite
         const newMed = medicamentos.find(m => m.id === data.medicamento_id);
         if (newMed) {
           await db.entities.Medicamento.update(newMed.id, {
-            estoque_atual: Math.max(0, (newMed.estoque_atual || 0) + oldSaida.quantidade - data.quantidade), // Usa o valor já compensado no DB com +oldSaida
-          });
-        }
-        const newLote = lotes.find(l => l.id === data.lote_id);
-        if (newLote) {
-          const novaQuantidadeLote = (newLote.quantidade_atual || 0) + (oldLote?.id === newLote.id ? oldSaida.quantidade : 0) - data.quantidade;
-          await db.entities.Lote.update(newLote.id, {
-            quantidade_atual: Math.max(0, novaQuantidadeLote),
-            status: novaQuantidadeLote <= 0 ? "esgotado" : newLote.status,
+            estoque_satelite: Math.max(0, (newMed.estoque_satelite || 0) + oldSaida.quantidade - data.quantidade), 
           });
         }
       } else {
         // Mesmo lote e mesmo medicamento: apenas diferença algébrica
-        const diff = data.quantidade - oldSaida.quantidade; // Se era 5, virou 7, diff=2 (tirar mais 2). Se virou 3, diff=-2 (devolver 2)
+        const diff = data.quantidade - oldSaida.quantidade; 
         if (diff !== 0) {
           const med = medicamentos.find(m => m.id === data.medicamento_id);
           if (med) {
             await db.entities.Medicamento.update(med.id, {
-              estoque_atual: Math.max(0, (med.estoque_atual || 0) - diff)
-            });
-          }
-          const lote = lotes.find(l => l.id === data.lote_id);
-          if (lote) {
-            const novaQuantidade = (lote.quantidade_atual || 0) - diff;
-            await db.entities.Lote.update(lote.id, {
-              quantidade_atual: Math.max(0, novaQuantidade),
-              status: novaQuantidade <= 0 ? "esgotado" : lote.status,
+              estoque_satelite: Math.max(0, (med.estoque_satelite || 0) - diff)
             });
           }
         }
@@ -345,7 +313,16 @@ export default function Saidas({ isTab = false }) {
     setFilterDate(prev => prev ? addDays(prev, 1) : new Date());
   };
 
-  const filteredSaidas = (saidas || []).filter(s => {
+  const medicamentosMap = useMemo(() => {
+    const map = {};
+    medicamentos.forEach(m => {
+      map[m.id] = m;
+    });
+    return map;
+  }, [medicamentos]);
+
+  const filteredSaidas = useMemo(() => {
+    return (saidas || []).filter(s => {
     const searchLow = (search || "").toLowerCase();
     
     // Filtro por termo de busca
@@ -361,7 +338,10 @@ export default function Saidas({ isTab = false }) {
       matchesDate = saidaDateStr === selectedDateStr;
     }
 
-    return matchesSearch && matchesDate;
+    // Ignore transferências de estoque (estas devem aparecer apenas no histórico de transferências)
+    const isNotTransferencia = s.motivo !== "Transferência de Estoque";
+
+    return matchesSearch && matchesDate && isNotTransferencia;
   }).sort((a, b) => {
     // 1. Prioridade máxima: O que foi gravado agora (created_at)
     const creatA = a.created_at || "";
@@ -375,6 +355,18 @@ export default function Saidas({ isTab = false }) {
 
     return (b.id || "").localeCompare(a.id || "");
   });
+  }, [saidas, search, filterDate]);
+
+  const observer = useRef();
+  const lastElementRef = (node) => {
+    if (observer.current) observer.current.disconnect();
+    observer.current = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && displayCount < filteredSaidas.length) {
+        setDisplayCount(prev => prev + 50);
+      }
+    });
+    if (node) observer.current.observe(node);
+  };
 
   const reportContent = (
     <>
@@ -422,7 +414,7 @@ export default function Saidas({ isTab = false }) {
           </thead>
           <tbody>
             {filteredSaidas.map((saida, idx) => {
-              const med = medicamentos.find(m => m.id === saida.medicamento_id);
+              const med = medicamentosMap[saida.medicamento_id];
               return (
                 <tr key={saida.id} className={idx % 2 === 0 ? "bg-slate-50/50" : "bg-white"}>
                   <td className="py-2 px-3 border border-slate-200 text-sm">
@@ -627,12 +619,14 @@ export default function Saidas({ isTab = false }) {
                 </TableCell>
               </TableRow>
             ) : (
-              filteredSaidas.map((saida) => (
-                <TableRow key={saida.id} className="hover:bg-slate-50/50">
+              filteredSaidas.slice(0, displayCount).map((saida, index) => {
+                const isLastElement = index === Math.min(filteredSaidas.length, displayCount) - 1;
+                return (
+                <TableRow ref={isLastElement ? lastElementRef : null} key={saida.id} className="hover:bg-slate-50/50">
                   {visibleColumns.codigo && (
                     <TableCell>
                       <Badge variant="outline" className="font-mono text-[10px] uppercase">
-                        {medicamentos.find(m => m.id === saida.medicamento_id)?.codigo || "S/C"}
+                        {medicamentosMap[saida.medicamento_id]?.codigo || "S/C"}
                       </Badge>
                     </TableCell>
                   )}
@@ -692,10 +686,16 @@ export default function Saidas({ isTab = false }) {
                     </TableCell>
                   )}
                 </TableRow>
-              ))
+                );
+              })
             )}
           </TableBody>
         </Table>
+        {filteredSaidas.length > displayCount && (
+          <div className="py-3 text-center text-sm text-slate-500 border-t border-slate-200 bg-slate-50">
+            Carregando mais itens...
+          </div>
+        )}
       </Card>
 
       {/* Form Modal */}

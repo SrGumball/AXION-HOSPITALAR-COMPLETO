@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { db } from "@/api/db";
 import { useQuery } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Boxes, AlertTriangle, Clock } from "lucide-react";
+import { Search, Boxes, AlertTriangle, Clock, ArrowRightLeft, Package } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { differenceInDays, parseISO, isValid, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -26,8 +26,10 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { invoke } from "@tauri-apps/api/core";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useMutation } from "@tanstack/react-query";
+import { ComboboxMedicamento } from "@/components/ui/combobox-medicamento";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -51,6 +53,11 @@ export default function Estoque() {
   const printRef = useRef();
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [displayCount, setDisplayCount] = useState(50);
+
+  useEffect(() => {
+    setDisplayCount(50);
+  }, [search, filterStatus]);
 
   const [deleteLoteId, setDeleteLoteId] = useState(null);
   const [deleteMedId, setDeleteMedId] = useState(null);
@@ -60,6 +67,31 @@ export default function Estoque() {
   const [novaValidade, setNovaValidade] = useState("");
   const [novoNumeroLote, setNovoNumeroLote] = useState("");
 
+  const [transferenciaForm, setTransferenciaForm] = useState({
+    direcao: "para_satelite",
+    medicamento_id: "",
+    lote_id: "",
+    quantidade: ""
+  });
+
+  const handleTransferenciaChange = (field, value) => {
+    setTransferenciaForm(prev => {
+      const next = { ...prev, [field]: value };
+      
+      // Auto-select FEFO lot when medication is selected
+      if (field === "medicamento_id") {
+        const lotesDoMed = lotes
+          .filter(l => l.medicamento_id === value && (next.direcao === "para_satelite" ? l.quantidade_atual > 0 : true))
+          .sort((a, b) => new Date(a.data_validade) - new Date(b.data_validade));
+        
+        const loteFefo = lotesDoMed.length > 0 ? lotesDoMed[0] : null;
+        next.lote_id = loteFefo ? loteFefo.id : "";
+      }
+      
+      return next;
+    });
+  };
+
   const { data: medicamentos = [], isLoading: loadingMeds } = useQuery({
     queryKey: ['medicamentos'],
     queryFn: () => db.entities.Medicamento.list(),
@@ -68,6 +100,14 @@ export default function Estoque() {
   const { data: lotes = [], isLoading: loadingLotes } = useQuery({
     queryKey: ['lotes'],
     queryFn: () => db.entities.Lote.list(),
+  });
+
+  const { data: historicoTransferencias = [] } = useQuery({
+    queryKey: ['saidas', 'transferencias'],
+    queryFn: async () => {
+      const allSaidas = await db.entities.Saida.list('-created_date');
+      return allSaidas.filter(s => s.motivo === "Transferência de Estoque");
+    }
   });
 
   const isLoading = loadingMeds || loadingLotes;
@@ -234,6 +274,114 @@ export default function Estoque() {
     }
   };
 
+  const observer = useRef();
+  const lastElementRef = (node) => {
+    if (observer.current) observer.current.disconnect();
+    observer.current = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && displayCount < filteredEstoque.length) {
+        setDisplayCount(prev => prev + 50);
+      }
+    });
+    if (node) observer.current.observe(node);
+  };
+
+  const realizarTransferencia = useMutation({
+    mutationFn: async () => {
+      if (!transferenciaForm.medicamento_id || !transferenciaForm.lote_id || !transferenciaForm.quantidade) {
+        throw new Error("Preencha todos os campos");
+      }
+      const qtd = parseInt(transferenciaForm.quantidade, 10);
+      if (isNaN(qtd) || qtd <= 0) {
+        throw new Error("Quantidade inválida");
+      }
+      const lote = lotes.find(l => l.id === transferenciaForm.lote_id);
+      const med = medicamentos.find(m => m.id === transferenciaForm.medicamento_id);
+      
+      if (transferenciaForm.direcao === "para_satelite") {
+        if (!lote || lote.quantidade_atual < qtd) {
+          throw new Error("Estoque insuficiente no lote selecionado");
+        }
+        // Update Lote
+        await invoke("update_entity", {
+          name: "Lote",
+          id: lote.id,
+          data: { quantidade_atual: lote.quantidade_atual - qtd, status: (lote.quantidade_atual - qtd) <= 0 ? "esgotado" : lote.status }
+        });
+        // Update Medicamento
+        await invoke("update_entity", {
+          name: "Medicamento",
+          id: med.id,
+          data: { 
+            estoque_atual: Math.max(0, (med.estoque_atual || 0) - qtd),
+            estoque_satelite: (med.estoque_satelite || 0) + qtd
+          }
+        });
+        // Registrar histórico
+        await db.entities.Saida.create({
+          medicamento_id: med.id,
+          medicamento_nome: med.nome,
+          lote_id: lote.id,
+          numero_lote: lote.numero_lote,
+          data_saida: format(new Date(), "yyyy-MM-dd'T'HH:mm:ssXXX"),
+          quantidade: qtd,
+          destino: "Farmácia Satélite",
+          motivo: "Transferência de Estoque",
+          observacao: "Transferido do Estoque Geral para Farmácia Satélite"
+        });
+      } else {
+        if ((med.estoque_satelite || 0) < qtd) {
+          throw new Error("Estoque insuficiente na satélite");
+        }
+        // Update Lote
+        await invoke("update_entity", {
+          name: "Lote",
+          id: lote.id,
+          data: { quantidade_atual: lote.quantidade_atual + qtd, status: "disponivel" }
+        });
+        // Update Medicamento
+        await invoke("update_entity", {
+          name: "Medicamento",
+          id: med.id,
+          data: { 
+            estoque_atual: (med.estoque_atual || 0) + qtd,
+            estoque_satelite: Math.max(0, (med.estoque_satelite || 0) - qtd)
+          }
+        });
+        // Registrar histórico
+        await db.entities.Saida.create({
+          medicamento_id: med.id,
+          medicamento_nome: med.nome,
+          lote_id: lote.id,
+          numero_lote: lote.numero_lote,
+          data_saida: format(new Date(), "yyyy-MM-dd'T'HH:mm:ssXXX"),
+          quantidade: qtd,
+          destino: "Estoque Geral",
+          motivo: "Transferência de Estoque",
+          observacao: "Devolvido da Farmácia Satélite para o Estoque Geral"
+        });
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['medicamentos'] });
+      queryClient.invalidateQueries({ queryKey: ['lotes'] });
+      queryClient.invalidateQueries({ queryKey: ['saidas'] });
+      toast.success("Transferência realizada com sucesso!");
+      setTransferenciaForm(prev => ({ ...prev, medicamento_id: "", lote_id: "", quantidade: "" }));
+    },
+    onError: (error) => {
+      toast.error(error.message || "Erro ao realizar transferência");
+    }
+  });
+
+  const activeMedLotes = lotes
+    .filter(l => 
+      l.medicamento_id === transferenciaForm.medicamento_id && 
+      (transferenciaForm.direcao === "para_satelite" ? l.quantidade_atual > 0 : true)
+    )
+    .sort((a, b) => new Date(a.data_validade) - new Date(b.data_validade));
+  const selectedTransferLote = lotes.find(l => l.id === transferenciaForm.lote_id);
+  const selectedMed = medicamentos.find(m => m.id === transferenciaForm.medicamento_id);
+
   return (
     <div className="p-6 space-y-6">
       {/* Modal de Troca de Validade */}
@@ -292,8 +440,16 @@ export default function Estoque() {
         </DialogContent>
       </Dialog>
 
-      {/* Header */}
-      <div className="flex justify-between items-start no-print">
+      <Tabs defaultValue="estoque">
+        <TabsList className="mb-6">
+          <TabsTrigger value="estoque" className="gap-2"><Boxes className="w-4 h-4" /> Estoque Geral</TabsTrigger>
+          <TabsTrigger value="satelite" className="gap-2"><Package className="w-4 h-4" /> Estoque Satélite</TabsTrigger>
+          <TabsTrigger value="transferencia" className="gap-2"><ArrowRightLeft className="w-4 h-4" /> Transferência Satélite</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="estoque" className="space-y-6">
+          {/* Header */}
+          <div className="flex justify-between items-start no-print">
         <div>
           <h1 className="text-2xl font-bold text-slate-800">Controle de Estoque</h1>
           <p className="text-slate-500 text-sm">Visualização detalhada por lote e validade</p>
@@ -385,8 +541,10 @@ export default function Estoque() {
           </div>
         ) : (
           <Accordion type="multiple" className="divide-y">
-            {filteredEstoque.map((med) => (
-              <AccordionItem key={med.id} value={med.id} className="border-0">
+            {filteredEstoque.slice(0, displayCount).map((med, index) => {
+              const isLastElement = index === Math.min(filteredEstoque.length, displayCount) - 1;
+              return (
+              <AccordionItem ref={isLastElement ? lastElementRef : null} key={med.id} value={med.id} className="border-0">
                 <AccordionTrigger className="px-6 py-4 hover:bg-slate-50/50 hover:no-underline">
                   <div className="flex items-center justify-between w-full mr-4">
                     <div className="flex items-center gap-3">
@@ -521,8 +679,15 @@ export default function Estoque() {
                   )}
                 </AccordionContent>
               </AccordionItem>
-            ))}
+              );
+            })}
           </Accordion>
+        )}
+        
+        {filteredEstoque.length > displayCount && (
+          <div className="py-4 text-center text-sm text-slate-500 border-t border-slate-100 bg-slate-50">
+            Carregando mais itens do estoque...
+          </div>
         )}
       </Card>
 
@@ -595,8 +760,186 @@ export default function Estoque() {
           </TableBody>
         </Table>
       </div>
+      </TabsContent>
 
-      <style jsx global>{`
+      <TabsContent value="satelite" className="space-y-6">
+        <Card className="border-0 shadow-sm overflow-hidden">
+          <div className="p-4 bg-white border-b border-slate-100 flex justify-between items-center">
+            <div>
+              <h3 className="font-bold text-slate-800">Itens na Farmácia Satélite</h3>
+              <p className="text-xs text-slate-500">Medicamentos e quantidades atualmente disponíveis no setor satélite</p>
+            </div>
+          </div>
+          <div className="max-h-[600px] overflow-y-auto">
+            <Table>
+              <TableHeader className="sticky top-0 bg-slate-50 z-10 shadow-sm">
+                <TableRow>
+                  <TableHead className="w-24">Cód.</TableHead>
+                  <TableHead>Medicamento</TableHead>
+                  <TableHead className="text-right">Quantidade (Satélite)</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredEstoque.filter(m => (m.estoque_satelite || 0) > 0).length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={3} className="text-center py-8 text-slate-500">
+                      Nenhum medicamento encontrado na farmácia satélite.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredEstoque.filter(m => (m.estoque_satelite || 0) > 0).map(med => (
+                    <TableRow key={med.id}>
+                      <TableCell>
+                        <Badge variant="outline" className="font-mono text-[10px] uppercase">
+                          {med.codigo || "S/C"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="font-medium text-slate-800">{med.nome}</TableCell>
+                      <TableCell className="text-right font-bold text-indigo-700">
+                        {med.estoque_satelite}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </Card>
+      </TabsContent>
+
+      <TabsContent value="transferencia">
+        <Card className="max-w-2xl mx-auto p-6 space-y-6 shadow-sm border-0">
+          <div>
+            <h2 className="text-xl font-bold text-slate-800">Transferência de Estoque</h2>
+            <p className="text-sm text-slate-500">Mova itens entre o estoque geral e a farmácia satélite</p>
+          </div>
+          
+          <div className="space-y-4">
+            <div className="flex gap-4 p-1 bg-slate-100 rounded-lg">
+              <Button
+                variant={transferenciaForm.direcao === "para_satelite" ? "default" : "ghost"}
+                className={transferenciaForm.direcao === "para_satelite" ? "bg-blue-600 text-white w-full" : "w-full"}
+                onClick={() => handleTransferenciaChange("direcao", "para_satelite")}
+              >
+                Para Satélite
+              </Button>
+              <Button
+                variant={transferenciaForm.direcao === "para_estoque" ? "default" : "ghost"}
+                className={transferenciaForm.direcao === "para_estoque" ? "bg-blue-600 text-white w-full" : "w-full"}
+                onClick={() => handleTransferenciaChange("direcao", "para_estoque")}
+              >
+                Para Estoque Geral
+              </Button>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Medicamento</Label>
+              <ComboboxMedicamento
+                  medicamentos={medicamentos.filter(m => 
+                    transferenciaForm.direcao === "para_satelite" 
+                      ? Number(m.estoque_atual || 0) > 0 
+                      : Number(m.estoque_satelite || 0) > 0
+                  )}
+                  value={transferenciaForm.medicamento_id}
+                  onChange={(val) => {
+                    handleTransferenciaChange("medicamento_id", val);
+                  }}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label>{transferenciaForm.direcao === "para_satelite" ? "Lote de Origem" : "Lote de Destino"}</Label>
+              <Select
+                value={transferenciaForm.lote_id}
+                onValueChange={(val) => handleTransferenciaChange("lote_id", val)}
+                disabled={!transferenciaForm.medicamento_id || activeMedLotes.length === 0}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o lote" />
+                </SelectTrigger>
+                <SelectContent>
+                  {activeMedLotes.map((l, index) => (
+                    <SelectItem key={l.id} value={l.id} className={index === 0 ? "font-bold text-amber-700 bg-amber-50" : ""}>
+                      {index === 0 ? "⭐ " : ""}{l.numero_lote} (Estoque atual: {l.quantidade_atual}) - Val: {safeFormatDate(l.data_validade)} {index === 0 ? "(Vence Primeiro)" : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label>Quantidade a Transferir</Label>
+              <Input 
+                type="number" 
+                min="1" 
+                max={transferenciaForm.direcao === "para_satelite" ? selectedTransferLote?.quantidade_atual : selectedMed?.estoque_satelite}
+                value={transferenciaForm.quantidade}
+                onChange={(e) => handleTransferenciaChange("quantidade", e.target.value)}
+                placeholder="Ex: 10"
+              />
+              {transferenciaForm.medicamento_id && (
+                <p className="text-xs text-slate-500 mt-1">
+                  Disponível: {transferenciaForm.direcao === "para_satelite" ? selectedTransferLote?.quantidade_atual || 0 : selectedMed?.estoque_satelite || 0}
+                </p>
+              )}
+            </div>
+
+            <Button 
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white mt-4" 
+              onClick={() => realizarTransferencia.mutate()}
+              disabled={realizarTransferencia.isPending || !transferenciaForm.medicamento_id || !transferenciaForm.lote_id || !transferenciaForm.quantidade}
+            >
+              Confirmar Transferência
+            </Button>
+          </div>
+        </Card>
+
+        <Card className="max-w-4xl mx-auto p-6 space-y-4 shadow-sm border-0 mt-6">
+          <div>
+            <h2 className="text-lg font-bold text-slate-800">Histórico de Transferências</h2>
+            <p className="text-sm text-slate-500">Últimas transferências realizadas entre estoques</p>
+          </div>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Data</TableHead>
+                  <TableHead>Medicamento</TableHead>
+                  <TableHead>Lote</TableHead>
+                  <TableHead className="text-center">Quantidade</TableHead>
+                  <TableHead>Destino</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {historicoTransferencias.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center py-6 text-slate-500">
+                      Nenhuma transferência registrada
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  historicoTransferencias.map(t => (
+                    <TableRow key={t.id}>
+                      <TableCell className="text-sm">{safeFormatDate(t.data_saida)}</TableCell>
+                      <TableCell className="font-medium text-slate-800">{t.medicamento_nome}</TableCell>
+                      <TableCell><Badge variant="outline">{t.numero_lote}</Badge></TableCell>
+                      <TableCell className="text-center font-bold text-blue-700">{t.quantidade}</TableCell>
+                      <TableCell>
+                        <Badge className={t.destino === "Farmácia Satélite" ? "bg-indigo-100 text-indigo-700" : "bg-emerald-100 text-emerald-700"}>
+                          {t.destino}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </Card>
+      </TabsContent>
+      </Tabs>
+
+      <style>{`
         @media print {
           @page {
             size: A4;

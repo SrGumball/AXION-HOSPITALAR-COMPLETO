@@ -28,7 +28,8 @@
  *
  *   import Home from './pages/Home';
  *   import Settings from './pages/Settings';
- *   import __Layout from './Layout.jsx';
+ *   import SateliteMovimentacoes from "./pages/SateliteMovimentacoes";
+import __Layout from './Layout.jsx';
  *
  *   export const PAGES = {
  *       "Home": Home,
@@ -66,6 +67,7 @@ import Medico from './pages/Medico';
 import Satelite from './pages/Satelite';
 import Terceirizado from './pages/Terceirizado';
 import ResponsavelTecnico from './pages/ResponsavelTecnico';
+import SateliteMovimentacoes from "./pages/SateliteMovimentacoes";
 import __Layout from './Layout.jsx';
 
 
@@ -87,6 +89,7 @@ export const PAGES = {
   "Enfermagem": Enfermagem,
   "Medico": Medico,
   "Satelite": Satelite,
+  "SateliteMovimentacoes": SateliteMovimentacoes,
   "Terceirizado": Terceirizado,
   "ResponsavelTecnico": ResponsavelTecnico,
 }

@@ -1,150 +1,269 @@
-import React, { useState } from "react";
-import { Pill, CheckCircle2, AlertCircle, Package, Search, ShieldAlert, FileText, User, Building2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { toast } from "sonner";
+import { useState, useMemo } from "react";
+import Saidas from "./Saidas";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Package, ArrowUpFromLine, LayoutDashboard, Building2, Stethoscope, AlertTriangle } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { db } from "@/api/db";
+import { Card } from "@/components/ui/card";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { format, isToday, parseISO } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
-export default function Satelite() {
-  const [paciente, setPaciente] = useState("");
-  const [buscaMed, setBuscaMed] = useState("");
-  const [medSelecionado, setMedSelecionado] = useState(null);
-  const [liberadas, setLiberadas] = useState([]);
-
+function PainelDashboard() {
   const { data: medicamentos = [] } = useQuery({
     queryKey: ['medicamentos'],
     queryFn: () => db.entities.Medicamento.list(),
   });
 
-  const medsFiltrados = buscaMed.length > 2 
-    ? medicamentos.filter(m => m.nome.toLowerCase().includes(buscaMed.toLowerCase()))
-    : [];
+  const { data: saidas = [] } = useQuery({
+    queryKey: ['saidas'],
+    queryFn: () => db.entities.Saida.list(),
+  });
 
-  const handleSelecionarMed = (med) => {
-    setMedSelecionado(med);
-    setBuscaMed(med.nome);
-  };
-
-  const handleDispensar = () => {
-    if (!paciente || !medSelecionado) {
-      toast.error("Preencha Paciente e selecione o Medicamento.");
-      return;
-    }
-
-    const novaLiberacao = {
-      id: Date.now(),
-      paciente,
-      medicamento: medSelecionado.nome,
-      data: new Date().toLocaleTimeString()
-    };
-
-    setLiberadas([novaLiberacao, ...liberadas]);
-    toast.success("Medicação dispensada com sucesso!");
+  const stats = useMemo(() => {
+    let totalSatelite = 0;
+    let uniqueMeds = 0;
+    let criticoSatelite = 0;
     
-    // Limpar form
-    setPaciente("");
-    setBuscaMed("");
-    setMedSelecionado(null);
-  };
+    // Calculate stock stats
+    medicamentos.forEach(m => {
+      const sateliteStock = m.estoque_satelite || 0;
+      if (sateliteStock > 0) {
+        totalSatelite += sateliteStock;
+        uniqueMeds++;
+      }
+      if (sateliteStock > 0 && sateliteStock <= 5) {
+        criticoSatelite++;
+      }
+    });
+
+    // Calculate today's dispenses
+    const todaySaidas = saidas.filter(s => {
+      if (!s.data_saida) return false;
+      try {
+        // Ignora transferências no dashboard do satélite
+        if (s.motivo === "Transferência de Estoque") return false;
+        return isToday(parseISO(s.data_saida));
+      } catch (e) {
+        return false;
+      }
+    });
+
+    const dispensesToday = todaySaidas.length;
+
+    // Chart Data: Top 8 with most stock in satellite
+    const chartData = medicamentos
+      .filter(m => (m.estoque_satelite || 0) > 0)
+      .sort((a, b) => (b.estoque_satelite || 0) - (a.estoque_satelite || 0))
+      .slice(0, 8)
+      .map(m => ({
+        name: m.nome.substring(0, 15) + (m.nome.length > 15 ? '...' : ''),
+        "Volume em Estoque": m.estoque_satelite || 0,
+      }));
+
+    // Recent Dispenses (Last 10)
+    const recentSaidas = saidas
+      .filter(s => s.motivo !== "Transferência de Estoque")
+      .sort((a, b) => new Date(b.created_at || b.data_saida) - new Date(a.created_at || a.data_saida))
+      .slice(0, 8);
+
+    return { totalSatelite, uniqueMeds, criticoSatelite, dispensesToday, chartData, recentSaidas };
+  }, [medicamentos, saidas]);
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6 relative">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-          <Package className="w-6 h-6 text-indigo-500" />
-          Farmácia Satélite
-        </h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400">
-          Dispensação manual de medicamentos para pacientes internados.
-        </p>
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 h-full">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="p-5 border-l-4 border-l-indigo-500 hover:shadow-md transition-shadow bg-indigo-50/10">
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="text-sm font-medium text-slate-500">Unidades Disponíveis</p>
+              <h3 className="text-3xl font-bold text-indigo-700 mt-1">{stats.totalSatelite}</h3>
+            </div>
+            <div className="p-3 bg-indigo-100 rounded-lg">
+              <Package className="w-6 h-6 text-indigo-600" />
+            </div>
+          </div>
+          <p className="text-xs text-slate-500 mt-4 flex items-center gap-1">
+            Total de comprimidos/frascos
+          </p>
+        </Card>
+
+        <Card className="p-5 border-l-4 border-l-emerald-500 hover:shadow-md transition-shadow">
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="text-sm font-medium text-slate-500">Medicamentos Únicos</p>
+              <h3 className="text-3xl font-bold text-slate-800 mt-1">{stats.uniqueMeds}</h3>
+            </div>
+            <div className="p-3 bg-emerald-50 rounded-lg">
+              <Stethoscope className="w-6 h-6 text-emerald-500" />
+            </div>
+          </div>
+          <p className="text-xs text-slate-500 mt-4 flex items-center gap-1">
+            Tipos diferentes de medicamentos
+          </p>
+        </Card>
+
+        <Card className="p-5 border-l-4 border-l-amber-500 hover:shadow-md transition-shadow">
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="text-sm font-medium text-slate-500">Itens Acabando</p>
+              <h3 className="text-3xl font-bold text-slate-800 mt-1">{stats.criticoSatelite}</h3>
+            </div>
+            <div className="p-3 bg-amber-50 rounded-lg">
+              <AlertTriangle className="w-6 h-6 text-amber-500" />
+            </div>
+          </div>
+          <p className="text-xs text-slate-500 mt-4 flex items-center gap-1">
+            <AlertTriangle className="w-3 h-3 text-amber-500" /> Estoque menor que 5
+          </p>
+        </Card>
+
+        <Card className="p-5 border-l-4 border-l-blue-500 hover:shadow-md transition-shadow">
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="text-sm font-medium text-slate-500">Dispensações (Hoje)</p>
+              <h3 className="text-3xl font-bold text-slate-800 mt-1">{stats.dispensesToday}</h3>
+            </div>
+            <div className="p-3 bg-blue-50 rounded-lg">
+              <ArrowUpFromLine className="w-6 h-6 text-blue-500" />
+            </div>
+          </div>
+          <p className="text-xs text-slate-500 mt-4 flex items-center gap-1">
+            Saídas registradas hoje
+          </p>
+        </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Painel de Dispensação */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
-          <h2 className="font-bold text-lg text-slate-800 dark:text-slate-100 mb-6 flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
-            <CheckCircle2 className="w-5 h-5 text-blue-500" /> Nova Dispensação
-          </h2>
-          
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Paciente</label>
-                <div className="relative">
-                  <User className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
-                  <Input 
-                    placeholder="Nome do paciente..." 
-                    className="pl-10" 
-                    value={paciente}
-                    onChange={(e) => setPaciente(e.target.value)}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-2 relative">
-              <label className="text-sm font-medium text-slate-700">Medicamento</label>
-              <div className="relative">
-                <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
-                <Input 
-                  placeholder="Digite para buscar o medicamento..." 
-                  className="pl-10"
-                  value={buscaMed}
-                  onChange={(e) => {
-                    setBuscaMed(e.target.value);
-                    if(medSelecionado && e.target.value !== medSelecionado.nome) {
-                      setMedSelecionado(null);
-                    }
-                  }}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[400px]">
+        <Card className="p-6 col-span-2 shadow-sm border border-slate-200 h-full flex flex-col">
+          <h3 className="text-lg font-bold text-slate-800 mb-4">Top 8 Maior Volume (Satélite)</h3>
+          <div className="flex-1 w-full min-h-0">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={stats.chartData} margin={{ top: 5, right: 30, left: 0, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 12, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                <Tooltip 
+                  cursor={{ fill: '#f1f5f9' }}
+                  contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                 />
-              </div>
-              
-              {/* Autocomplete Dropdown */}
-              {buscaMed.length > 2 && !medSelecionado && medsFiltrados.length > 0 && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl z-10 max-h-48 overflow-y-auto">
-                  {medsFiltrados.map(med => (
-                    <div 
-                      key={med.id} 
-                      className="p-3 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer flex justify-between items-center border-b border-slate-100 last:border-0"
-                      onClick={() => handleSelecionarMed(med)}
-                    >
-                      <div className="font-medium text-sm text-slate-700 dark:text-slate-200">{med.nome}</div>
+                <Legend iconType="circle" wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
+                <Bar dataKey="Volume em Estoque" fill="#6366f1" radius={[4, 4, 0, 0]} name="Unidades no Satélite" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </Card>
+
+        <Card className="p-6 shadow-sm border border-slate-200 overflow-hidden flex flex-col h-full">
+          <h3 className="text-lg font-bold text-slate-800 mb-4">Saídas Recentes</h3>
+          <div className="flex-1 overflow-y-auto pr-2 space-y-3">
+            {stats.recentSaidas.length === 0 ? (
+              <p className="text-sm text-slate-500 text-center mt-10">Nenhuma saída recente.</p>
+            ) : (
+              stats.recentSaidas.map(saida => (
+                <div key={saida.id} className="p-3 bg-slate-50 rounded-lg border border-slate-100 flex justify-between items-center group hover:bg-slate-100 transition-colors">
+                  <div className="overflow-hidden">
+                    <p className="font-semibold text-xs text-slate-700 truncate" title={saida.medicamento_nome}>
+                      {saida.medicamento_nome}
+                    </p>
+                    <div className="flex gap-2 items-center mt-1">
+                      <span className="text-[10px] text-slate-500 font-mono">{saida.ala_nome || "Sem Ala"}</span>
                     </div>
-                  ))}
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <Badge variant="outline" className="bg-red-50 text-red-600 border-red-200 shadow-sm">
+                      -{saida.quantidade}
+                    </Badge>
+                  </div>
                 </div>
-              )}
-            </div>
-
-            <Button onClick={handleDispensar} className="w-full bg-blue-600 hover:bg-blue-700 text-white mt-4 h-12 text-md shadow-lg shadow-blue-600/20">
-              Dispensar Medicamento
-            </Button>
+              ))
+            )}
           </div>
-        </div>
-
-        {/* Histórico */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm flex flex-col">
-          <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center gap-2 bg-slate-50 dark:bg-slate-800/50">
-            <FileText className="w-5 h-5 text-emerald-500" />
-            <h2 className="font-bold text-slate-800 dark:text-slate-100">Dispensações Realizadas</h2>
-          </div>
-          
-          <div className="divide-y divide-slate-100 dark:divide-slate-800 flex-1 overflow-y-auto p-2">
-            {liberadas.length === 0 ? (
-              <div className="p-8 text-center text-slate-500">Nenhum histórico recente.</div>
-            ) : liberadas.map(p => (
-              <div key={p.id} className="p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                <div className="flex justify-between items-start mb-1">
-                  <h3 className="font-semibold text-sm text-slate-800 dark:text-slate-200">{p.medicamento}</h3>
-                  <span className="text-xs text-slate-400">{p.data}</span>
-                </div>
-                <p className="text-xs text-slate-500 mb-1">{p.paciente}</p>
-              </div>
-            ))}
-          </div>
-        </div>
+        </Card>
       </div>
+    </div>
+  );
+}
 
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+
+function EstoqueSateliteList() {
+  const { data: medicamentos = [] } = useQuery({
+    queryKey: ['medicamentos'],
+    queryFn: () => db.entities.Medicamento.list(),
+  });
+
+  const sateliteMeds = medicamentos
+    .filter(m => (m.estoque_satelite || 0) > 0)
+    .sort((a, b) => a.nome.localeCompare(b.nome));
+
+  return (
+    <Card className="border-0 shadow-sm overflow-hidden">
+      <div className="p-4 bg-white border-b border-slate-100">
+        <h3 className="font-bold text-slate-800">Itens na Farmácia Satélite</h3>
+        <p className="text-xs text-slate-500">Medicamentos atualmente disponíveis para dispensação</p>
+      </div>
+      <div className="max-h-[600px] overflow-y-auto">
+        <Table>
+          <TableHeader className="sticky top-0 bg-slate-50 z-10 shadow-sm">
+            <TableRow>
+              <TableHead className="w-24">Cód.</TableHead>
+              <TableHead>Medicamento</TableHead>
+              <TableHead className="text-right">Quantidade</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {sateliteMeds.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={3} className="text-center py-8 text-slate-500">
+                  Nenhum medicamento na farmácia satélite.
+                </TableCell>
+              </TableRow>
+            ) : (
+              sateliteMeds.map(med => (
+                <TableRow key={med.id}>
+                  <TableCell>
+                    <Badge variant="outline" className="font-mono text-[10px] uppercase">
+                      {med.codigo || "S/C"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="font-medium text-slate-800">{med.nome}</TableCell>
+                  <TableCell className="text-right font-bold text-indigo-700">
+                    {med.estoque_satelite}
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+    </Card>
+  );
+}
+
+export default function Satelite() {
+  return (
+    <div className="h-full flex flex-col p-4 md:p-6 space-y-4">
+      <div>
+        <h1 className="text-2xl font-bold text-slate-800">Painel Satélite</h1>
+        <p className="text-slate-500 text-sm">Visão geral e controle do estoque da farmácia satélite</p>
+      </div>
+      
+      <Tabs defaultValue="dashboard" className="w-full flex-1 flex flex-col">
+        <TabsList className="w-fit bg-slate-100/50 p-1">
+          <TabsTrigger value="dashboard" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">Dashboard</TabsTrigger>
+          <TabsTrigger value="estoque" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">Estoque Atual</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="dashboard" className="flex-1 mt-4">
+          <PainelDashboard />
+        </TabsContent>
+        
+        <TabsContent value="estoque" className="flex-1 mt-4">
+          <EstoqueSateliteList />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

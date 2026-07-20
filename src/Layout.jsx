@@ -42,27 +42,29 @@ const estoqueMenu = [
   { name: "Dashboard", icon: LayoutDashboard, page: "Dashboard" },
   { name: "Medicamentos", icon: Package, page: "Medicamentos" },
   { name: "Movimentações", icon: ArrowLeftRight, page: "Movimentacoes" },
-  { name: "Empréstimos", icon: HandHelping, page: "Emprestimos" },
   { name: "Estoque", icon: Boxes, page: "Estoque" },
   { name: "Vencimentos", icon: CalendarX2, page: "Vencimentos" },
-  { name: "Cadastros", icon: Building2, page: "Cadastros" },
-  { name: "Balanço", icon: ClipboardCheck, page: "Inventario" },
   { name: "Relatórios", icon: FileText, page: "Relatorios" },
-  { name: "Configurações", icon: Settings, page: "Configuracoes" },
 ];
 
 const sateliteMenu = [
   { name: "Painel Satélite", icon: LayoutDashboard, page: "Satelite" },
-  { name: "Dispensação", icon: Pill, page: "SateliteDispensacao" },
+  { name: "Movimentações", icon: ArrowLeftRight, page: "SateliteMovimentacoes" },
 ];
 
 const rtMenu = [
   { name: "Gestão RT", icon: Users, page: "ResponsavelTecnico" },
+  { name: "Cadastros", icon: Building2, page: "Cadastros" },
+  { name: "Empréstimos", icon: HandHelping, page: "Emprestimos" },
+  { name: "Configurações", icon: Settings, page: "Configuracoes" },
 ];
 
 function getMenuForPage(pageName) {
   if (pageName?.startsWith("Satelite")) return { menu: sateliteMenu, subtitle: "Farmácia Satélite" };
-  if (pageName === "ResponsavelTecnico") return { menu: rtMenu, subtitle: "Responsável Técnico (RT)" };
+  
+  const rtPages = ["ResponsavelTecnico", "Cadastros", "Emprestimos", "Configuracoes"];
+  if (rtPages.includes(pageName)) return { menu: rtMenu, subtitle: "Responsável Técnico (RT)" };
+  
   return { menu: estoqueMenu, subtitle: "Estoque Central" };
 }
 
@@ -76,7 +78,7 @@ export default function Layout({ children, currentPageName }) {
   });
 
   useEffect(() => {
-    setUser({ full_name: "Administrador", email: "local@axion.saude" });
+    setUser({ full_name: "Administrador" });
   }, []);
 
   // Global Keyboard Shortcuts
@@ -161,7 +163,7 @@ export default function Layout({ children, currentPageName }) {
 
       {/* Sidebar — navy escuro */}
       <aside className={cn(
-        "fixed top-0 left-0 h-full w-64 bg-[#0F172A] z-50 transition-transform duration-300 flex flex-col",
+        "fixed top-0 left-0 h-full w-56 bg-[#0F172A] z-50 transition-transform duration-300 flex flex-col",
         "lg:translate-x-0",
         sidebarOpen ? "translate-x-0" : "-translate-x-full"
       )}>
@@ -224,7 +226,6 @@ export default function Layout({ children, currentPageName }) {
                 </div>
                 <div className="min-w-0">
                   <p className="font-medium text-xs text-slate-200 truncate">{user.full_name}</p>
-                  <p className="text-[10px] text-slate-500 truncate">{user.email}</p>
                 </div>
               </div>
               <div className="flex items-center gap-1 shrink-0">
@@ -251,7 +252,7 @@ export default function Layout({ children, currentPageName }) {
       </aside>
 
       {/* Main Content */}
-      <main className="lg:ml-64 min-h-screen pt-16 lg:pt-0">
+      <main className="lg:ml-56 min-h-screen pt-16 lg:pt-0">
         {children}
       </main>
     </div>

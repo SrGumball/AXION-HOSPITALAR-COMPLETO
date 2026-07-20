@@ -1,61 +1,15 @@
 /**
  * WelcomeScreen.jsx
  * Tela inicial antes de entrar no sistema.
- * Exibe os módulos do hospital — clique em qualquer um para entrar no Dashboard.
+ * Exibe os módulos do hospital — clique em qualquer um para abrir o login.
  */
 
 import { useState, useEffect } from "react";
 import logo from "../assets/logo-tr.png";
+import { Toaster, toast } from "sonner";
+import { addLog } from "./logger";
 
 // ─── Ícones SVG ───────────────────────────────────────────────────────────────
-
-const IconRecepcao = ({ color }) => (
-  <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
-    {/* Balcão de recepção */}
-    <rect x="2" y="14" width="20" height="3" rx="1" stroke={color} strokeWidth="1.5" fill={color + "22"} />
-    <path d="M5 14V10a7 7 0 0 1 14 0v4" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
-    <circle cx="12" cy="7" r="2.5" stroke={color} strokeWidth="1.5" fill={color + "22"} />
-    <path d="M9 14v-1.5a3 3 0 0 1 6 0V14" stroke={color} strokeWidth="1.2" strokeLinecap="round" />
-    <line x1="2" y1="20" x2="22" y2="20" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
-  </svg>
-);
-
-const IconMedico = ({ color }) => (
-  <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
-    {/* Estetoscópio */}
-    <circle cx="18" cy="17" r="3" stroke={color} strokeWidth="1.5" fill={color + "22"} />
-    <path d="M15 17H9a5 5 0 0 1-5-5V6" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
-    <path d="M7 6V4a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v2" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
-    <path d="M9 6V4a1 1 0 0 1 1-1h1a1 1 0 0 1 1 1v2" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
-    <path d="M7 6h3" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
-    <circle cx="18" cy="17" r="1" fill={color} />
-  </svg>
-);
-
-const IconEnfermagem = ({ color }) => (
-  <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
-    {/* Cruz + silhueta enfermeira */}
-    <circle cx="12" cy="6" r="3" stroke={color} strokeWidth="1.5" fill={color + "22"} />
-    <path d="M7 21v-2a5 5 0 0 1 10 0v2" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
-    {/* Cruz */}
-    <rect x="14" y="3" width="7" height="7" rx="1" fill={color + "22"} stroke={color} strokeWidth="1.2" />
-    <line x1="17.5" y1="4.5" x2="17.5" y2="8.5" stroke={color} strokeWidth="1.4" strokeLinecap="round" />
-    <line x1="15.5" y1="6.5" x2="19.5" y2="6.5" stroke={color} strokeWidth="1.4" strokeLinecap="round" />
-  </svg>
-);
-
-const IconFarmaciaSatelite = ({ color }) => (
-  <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
-    {/* Frasco + satélite */}
-    <path d="M9 3h6l1 4H8L9 3z" stroke={color} strokeWidth="1.5" strokeLinejoin="round" fill={color + "22"} />
-    <path d="M8 7v9a3 3 0 0 0 3 3h2a3 3 0 0 0 3-3V7" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
-    <line x1="8" y1="11" x2="16" y2="11" stroke={color} strokeWidth="1.2" strokeLinecap="round" />
-    {/* Sinal satélite */}
-    <path d="M17 5 q2-1 2 2" stroke={color} strokeWidth="1.2" strokeLinecap="round" fill="none" opacity="0.7" />
-    <path d="M18.5 3.5 q3-1 3 3.5" stroke={color} strokeWidth="1.2" strokeLinecap="round" fill="none" opacity="0.5" />
-    <circle cx="17" cy="5" r="0.6" fill={color} />
-  </svg>
-);
 
 const IconEstoqueFarmacia = ({ color }) => (
   <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
@@ -76,6 +30,19 @@ const IconEstoqueFarmacia = ({ color }) => (
   </svg>
 );
 
+const IconFarmaciaSatelite = ({ color }) => (
+  <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
+    {/* Frasco + satélite */}
+    <path d="M9 3h6l1 4H8L9 3z" stroke={color} strokeWidth="1.5" strokeLinejoin="round" fill={color + "22"} />
+    <path d="M8 7v9a3 3 0 0 0 3 3h2a3 3 0 0 0 3-3V7" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
+    <line x1="8" y1="11" x2="16" y2="11" stroke={color} strokeWidth="1.2" strokeLinecap="round" />
+    {/* Sinal satélite */}
+    <path d="M17 5 q2-1 2 2" stroke={color} strokeWidth="1.2" strokeLinecap="round" fill="none" opacity="0.7" />
+    <path d="M18.5 3.5 q3-1 3 3.5" stroke={color} strokeWidth="1.2" strokeLinecap="round" fill="none" opacity="0.5" />
+    <circle cx="17" cy="5" r="0.6" fill={color} />
+  </svg>
+);
+
 const IconAdministrador = ({ color }) => (
   <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
     {/* Escudo + estrela */}
@@ -92,22 +59,13 @@ const IconAdministrador = ({ color }) => (
   </svg>
 );
 
-const IconTerceirizado = ({ color }) => (
-  <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
-    {/* Maleta / Briefcase */}
-    <rect x="4" y="9" width="16" height="11" rx="2" stroke={color} strokeWidth="1.5" fill={color + "18"} />
-    <path d="M8 9V7a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
-    <circle cx="12" cy="14" r="1.5" fill={color} />
-  </svg>
-);
-
 // ─── Módulos ──────────────────────────────────────────────────────────────────
 
 const MODULES = [
   {
     key: "estoque_farmacia",
     label: "Estoque",
-    sub: "Gestão e Envio para Satélite",
+    sub: "Gestão e Envio",
     color: "#a78bfa",
     glow: "rgba(167,139,250,0.3)",
     border: "rgba(167,139,250,0.4)",
@@ -117,7 +75,7 @@ const MODULES = [
   {
     key: "farmacia_satelite",
     label: "Farmácia Satélite",
-    sub: "Dispensação para Paciente",
+    sub: "Dispensação",
     color: "#fb923c",
     glow: "rgba(251,146,60,0.3)",
     border: "rgba(251,146,60,0.4)",
@@ -127,7 +85,7 @@ const MODULES = [
   {
     key: "responsavel_tecnico",
     label: "Responsável Técnico",
-    sub: "Gestão e Usuários",
+    sub: "Gestão de Usuários",
     color: "#34d399",
     glow: "rgba(52,211,153,0.3)",
     border: "rgba(52,211,153,0.4)",
@@ -172,7 +130,6 @@ function ModuleCard({ mod, delay, visible, onClick }) {
         backdropFilter: "blur(8px)",
       }}
     >
-      {/* Ícone */}
       <div style={{
         width: 76,
         height: 76,
@@ -188,8 +145,6 @@ function ModuleCard({ mod, delay, visible, onClick }) {
       }}>
         <mod.Icon color={mod.color} />
       </div>
-
-      {/* Textos */}
       <div style={{ textAlign: "center" }}>
         <div style={{
           fontSize: 13,
@@ -220,17 +175,113 @@ function ModuleCard({ mod, delay, visible, onClick }) {
 export function WelcomeScreen({ onEnter }) {
   const [visible, setVisible] = useState(false);
   const [exiting, setExiting] = useState(false);
-  const [showAdminMenu, setShowAdminMenu] = useState(false);
-  const [showEnfermagemMenu, setShowEnfermagemMenu] = useState(false);
+  
+  // Login State
+  const [selectedModule, setSelectedModule] = useState(null);
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [isFirstLogin, setIsFirstLogin] = useState(false);
+  const [loggedInUser, setLoggedInUser] = useState(null);
 
   useEffect(() => {
     const t = setTimeout(() => setVisible(true), 80);
     return () => clearTimeout(t);
   }, []);
 
+  // Make sure at least default admin exists
+  useEffect(() => {
+    const saved = localStorage.getItem("axion_users");
+    let users = saved ? JSON.parse(saved) : [];
+    
+    const adminIndex = users.findIndex(u => u.username === "admin");
+    if (adminIndex === -1) {
+      users.push({
+        id: "1",
+        nome: "Administrador RT",
+        username: "admin",
+        password: "admin123",
+        modules: ["estoque_farmacia", "farmacia_satelite", "responsavel_tecnico"],
+        first_login: false
+      });
+      localStorage.setItem("axion_users", JSON.stringify(users));
+    } else {
+      // Force admin password to always be admin123 on load to prevent locking out
+      if (users[adminIndex].password !== "admin123") {
+        users[adminIndex].password = "admin123";
+        localStorage.setItem("axion_users", JSON.stringify(users));
+      }
+    }
+  }, []);
+
   const handleModuleClick = (mod) => {
+    setSelectedModule(mod);
+    setUsername("");
+    setPassword("");
+    setNewPassword("");
+    setConfirmPassword("");
+    setIsFirstLogin(false);
+    setLoggedInUser(null);
+  };
+
+  const handleLoginSubmit = (e) => {
+    e.preventDefault();
+    const users = JSON.parse(localStorage.getItem("axion_users") || "[]");
+    const user = users.find(u => u.username === username && u.password === password);
+
+    if (!user) {
+      toast.error("Usuário ou senha incorretos.");
+      return;
+    }
+
+    if (!user.modules.includes(selectedModule.key)) {
+      toast.error(`Você não tem permissão para acessar: ${selectedModule.label}`);
+      return;
+    }
+
+    if (user.first_login) {
+      setIsFirstLogin(true);
+      setLoggedInUser(user);
+      return;
+    }
+
+    // Success login
+    sessionStorage.setItem("axion_active_user", JSON.stringify(user));
+    addLog(user.nome, "Login", `Acessou o módulo: ${selectedModule.label}`);
+    
     setExiting(true);
-    setTimeout(() => onEnter(mod.key), 550);
+    setTimeout(() => onEnter(selectedModule.key), 550);
+  };
+
+  const handlePasswordChange = (e) => {
+    e.preventDefault();
+    if (newPassword !== confirmPassword) {
+      toast.error("As senhas não coincidem.");
+      return;
+    }
+    if (newPassword.length < 3) {
+      toast.error("A senha deve ter pelo menos 3 caracteres.");
+      return;
+    }
+
+    // Update user in localStorage
+    const users = JSON.parse(localStorage.getItem("axion_users") || "[]");
+    const updatedUser = { ...loggedInUser, password: newPassword, first_login: false };
+    const updatedUsers = users.map(u => {
+      if (u.id === loggedInUser.id) {
+        return updatedUser;
+      }
+      return u;
+    });
+    localStorage.setItem("axion_users", JSON.stringify(updatedUsers));
+    
+    sessionStorage.setItem("axion_active_user", JSON.stringify(updatedUser));
+    addLog(updatedUser.nome, "Login", `Acessou o módulo: ${selectedModule.label} (Senha alterada)`);
+
+    toast.success("Senha alterada com sucesso! Entrando...");
+    setExiting(true);
+    setTimeout(() => onEnter(selectedModule.key), 550);
   };
 
   return (
@@ -250,6 +301,8 @@ export function WelcomeScreen({ onEnter }) {
         transition: "opacity 0.55s ease",
       }}
     >
+      <Toaster position="top-right" richColors />
+      
       {/* Grade de fundo */}
       <div style={{
         position: "absolute",
@@ -301,34 +354,155 @@ export function WelcomeScreen({ onEnter }) {
         flexDirection: "column",
         alignItems: "center",
       }}>
-        <>
-          <div style={{
-            fontSize: 16,
-            color: "#475569",
-            marginBottom: 44,
-            letterSpacing: 0.5,
-            fontWeight: 500,
-          }}>
-            Selecione o módulo para acessar
-          </div>
+        {!selectedModule ? (
+          <>
+            <div style={{
+              fontSize: 16,
+              color: "#475569",
+              marginBottom: 44,
+              letterSpacing: 0.5,
+              fontWeight: 500,
+            }}>
+              Selecione o módulo para acessar
+            </div>
 
+            <div style={{
+              display: "flex",
+              justifyContent: "center",
+              gap: 20,
+              perspective: "1000px"
+            }}>
+              {MODULES.map((mod, i) => (
+                <ModuleCard
+                  key={mod.key}
+                  mod={mod}
+                  delay={100 + i * 80}
+                  visible={visible && !exiting}
+                  onClick={() => handleModuleClick(mod)}
+                />
+              ))}
+            </div>
+          </>
+        ) : (
           <div style={{
+            background: "rgba(15, 23, 42, 0.7)",
+            backdropFilter: "blur(12px)",
+            border: "1px solid rgba(255, 255, 255, 0.1)",
+            borderRadius: "20px",
+            padding: "32px",
+            width: "360px",
+            boxShadow: "0 10px 40px rgba(0,0,0,0.5)",
+            animation: "fadeIn 0.3s ease-out forwards",
             display: "flex",
-            justifyContent: "center",
-            gap: 20,
-            perspective: "1000px"
+            flexDirection: "column",
+            gap: "20px"
           }}>
-            {MODULES.map((mod, i) => (
-              <ModuleCard
-                key={mod.key}
-                mod={mod}
-                delay={100 + i * 80}
-                visible={visible && !exiting}
-                onClick={() => handleModuleClick(mod)}
-              />
-            ))}
+            <style>{`
+              @keyframes fadeIn { from { opacity: 0; transform: translateY(10px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
+            `}</style>
+            
+            <div style={{ textAlign: "center" }}>
+              <h2 style={{ margin: 0, color: "#e2e8f0", fontSize: "1.2rem", fontWeight: "600" }}>
+                Acesso: {selectedModule.label}
+              </h2>
+              <p style={{ margin: "4px 0 0", color: "#94a3b8", fontSize: "0.85rem" }}>
+                {isFirstLogin ? "Primeiro Acesso: Altere sua senha" : "Insira suas credenciais"}
+              </p>
+            </div>
+
+            {!isFirstLogin ? (
+              <form onSubmit={handleLoginSubmit} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                <div>
+                  <label style={{ display: "block", fontSize: "0.8rem", color: "#cbd5e1", marginBottom: "6px" }}>Usuário</label>
+                  <input
+                    required
+                    autoFocus
+                    type="text"
+                    value={username}
+                    onChange={e => setUsername(e.target.value)}
+                    style={{
+                      width: "100%", padding: "10px 14px", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.1)",
+                      background: "rgba(0,0,0,0.2)", color: "#fff", outline: "none", boxSizing: "border-box"
+                    }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: "block", fontSize: "0.8rem", color: "#cbd5e1", marginBottom: "6px" }}>Senha</label>
+                  <input
+                    required
+                    type="password"
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    style={{
+                      width: "100%", padding: "10px 14px", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.1)",
+                      background: "rgba(0,0,0,0.2)", color: "#fff", outline: "none", boxSizing: "border-box"
+                    }}
+                  />
+                </div>
+                <div style={{ display: "flex", gap: "10px", marginTop: "10px" }}>
+                  <button type="button" onClick={() => setSelectedModule(null)} style={{
+                    flex: 1, padding: "10px", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.1)",
+                    background: "transparent", color: "#e2e8f0", cursor: "pointer", fontWeight: "500"
+                  }}>
+                    Voltar
+                  </button>
+                  <button type="submit" style={{
+                    flex: 1, padding: "10px", borderRadius: "8px", border: "none",
+                    background: selectedModule.color, color: "#fff", cursor: "pointer", fontWeight: "600",
+                    boxShadow: `0 4px 14px ${selectedModule.glow}`
+                  }}>
+                    Entrar
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <form onSubmit={handlePasswordChange} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                <div>
+                  <label style={{ display: "block", fontSize: "0.8rem", color: "#cbd5e1", marginBottom: "6px" }}>Nova Senha</label>
+                  <input
+                    required
+                    autoFocus
+                    type="password"
+                    value={newPassword}
+                    onChange={e => setNewPassword(e.target.value)}
+                    style={{
+                      width: "100%", padding: "10px 14px", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.1)",
+                      background: "rgba(0,0,0,0.2)", color: "#fff", outline: "none", boxSizing: "border-box"
+                    }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: "block", fontSize: "0.8rem", color: "#cbd5e1", marginBottom: "6px" }}>Confirmar Nova Senha</label>
+                  <input
+                    required
+                    type="password"
+                    value={confirmPassword}
+                    onChange={e => setConfirmPassword(e.target.value)}
+                    style={{
+                      width: "100%", padding: "10px 14px", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.1)",
+                      background: "rgba(0,0,0,0.2)", color: "#fff", outline: "none", boxSizing: "border-box"
+                    }}
+                  />
+                </div>
+                <div style={{ display: "flex", gap: "10px", marginTop: "10px" }}>
+                  <button type="button" onClick={() => setSelectedModule(null)} style={{
+                    flex: 1, padding: "10px", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.1)",
+                    background: "transparent", color: "#e2e8f0", cursor: "pointer", fontWeight: "500"
+                  }}>
+                    Cancelar
+                  </button>
+                  <button type="submit" style={{
+                    flex: 1, padding: "10px", borderRadius: "8px", border: "none",
+                    background: selectedModule.color, color: "#fff", cursor: "pointer", fontWeight: "600",
+                    boxShadow: `0 4px 14px ${selectedModule.glow}`
+                  }}>
+                    Salvar e Entrar
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
-        </>
+        )}
       </div>
 
       {/* Linha divisória + rodapé */}

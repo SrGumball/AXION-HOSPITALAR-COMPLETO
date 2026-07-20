@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { db } from "@/api/db";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -60,8 +60,6 @@ export default function Entradas({ isTab = false }) {
     dataEntrada: true,
     qtd: true,
     fornecedor: true,
-    nf: true,
-    valorTotal: true,
     acoes: true
   });
 
@@ -97,7 +95,16 @@ export default function Entradas({ isTab = false }) {
     setFilterDate(prev => prev ? addDays(prev, 1) : addDays(new Date(), 1));
   };
 
-  const filteredEntradas = (entradas || []).filter(e => {
+  const medicamentosMap = useMemo(() => {
+    const map = {};
+    medicamentos.forEach(m => {
+      map[m.id] = m;
+    });
+    return map;
+  }, [medicamentos]);
+
+  const filteredEntradas = useMemo(() => {
+    return (entradas || []).filter(e => {
     const searchLow = (search || "").toLowerCase();
     
     // Filtro por termo de busca
@@ -114,6 +121,7 @@ export default function Entradas({ isTab = false }) {
 
     return matchesSearch && matchesDate;
   });
+  }, [entradas, search, filterDate]);
 
   const createEntradaMutation = useMutation({
     mutationFn: async (data) => {
@@ -371,7 +379,7 @@ export default function Entradas({ isTab = false }) {
       </div>
 
       <div className="mb-6">
-        <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-2 gap-4 mb-6">
           <div className="border border-slate-200 rounded-lg p-4 bg-emerald-50">
             <p className="text-xs font-medium text-slate-600 mb-2">Total de Entradas</p>
             <p className="text-2xl font-bold text-emerald-700">{filteredEntradas.length}</p>
@@ -380,12 +388,6 @@ export default function Entradas({ isTab = false }) {
             <p className="text-xs font-medium text-slate-600 mb-2">Quantidade Total</p>
             <p className="text-2xl font-bold text-blue-700">
               {filteredEntradas.reduce((sum, e) => sum + (e.quantidade || 0), 0).toLocaleString('pt-BR')}
-            </p>
-          </div>
-          <div className="border border-slate-200 rounded-lg p-4 bg-purple-50">
-            <p className="text-xs font-medium text-slate-600 mb-2">Valor Total</p>
-            <p className="text-2xl font-bold text-purple-700">
-              R$ {filteredEntradas.reduce((sum, e) => sum + (e.valor_total || 0), 0).toFixed(2)}
             </p>
           </div>
         </div>
@@ -399,12 +401,11 @@ export default function Entradas({ isTab = false }) {
               <th className="text-left py-2 px-3 text-xs font-semibold border border-emerald-600">Lote</th>
               <th className="text-center py-2 px-3 text-xs font-semibold border border-emerald-600">Qtd</th>
               <th className="text-left py-2 px-3 text-xs font-semibold border border-emerald-600">Fornecedor</th>
-              <th className="text-right py-2 px-3 text-xs font-semibold border border-emerald-600">Valor</th>
             </tr>
           </thead>
           <tbody>
             {filteredEntradas.map((entrada, idx) => {
-              const med = medicamentos.find(m => m.id === entrada.medicamento_id);
+              const med = medicamentosMap[entrada.medicamento_id];
               return (
                 <tr key={entrada.id} className={idx % 2 === 0 ? "bg-slate-50/50" : "bg-white"}>
                   <td className="py-2 px-3 border border-slate-200 text-sm">
@@ -419,9 +420,6 @@ export default function Entradas({ isTab = false }) {
                     +{entrada.quantidade}
                   </td>
                   <td className="py-2 px-3 border border-slate-200 text-sm">{entrada.fornecedor_nome || "-"}</td>
-                  <td className="py-2 px-3 border border-slate-200 text-right font-medium text-sm">
-                    {entrada.valor_total ? `R$ ${entrada.valor_total.toFixed(2)}` : "-"}
-                  </td>
                 </tr>
               );
             })}
@@ -492,9 +490,7 @@ export default function Entradas({ isTab = false }) {
                     {col === "codigo" ? "Cód." :
                       col === "dataEntrada" ? "Data Entrada" :
                         col === "qtd" ? "Quantidade" :
-                          col === "nf" ? "NF" :
-                            col === "valorTotal" ? "Valor Total" :
-                              col === "acoes" ? "Ações" : col}
+                          col === "acoes" ? "Ações" : col}
                   </DropdownMenuCheckboxItem>
                 ))}
               </DropdownMenuContent>
@@ -537,9 +533,7 @@ export default function Entradas({ isTab = false }) {
                   {col === "codigo" ? "Cód." :
                     col === "dataEntrada" ? "Data Entrada" :
                       col === "qtd" ? "Quantidade" :
-                        col === "nf" ? "NF" :
-                          col === "valorTotal" ? "Valor Total" :
-                            col === "acoes" ? "Ações" : col}
+                        col === "acoes" ? "Ações" : col}
                 </DropdownMenuCheckboxItem>
               ))}
             </DropdownMenuContent>
@@ -632,8 +626,6 @@ export default function Entradas({ isTab = false }) {
               {visibleColumns.dataEntrada && <TableHead>Data Entrada</TableHead>}
               {visibleColumns.qtd && <TableHead className="text-center">Qtd</TableHead>}
               {visibleColumns.fornecedor && <TableHead>Fornecedor</TableHead>}
-              {visibleColumns.nf && <TableHead>NF</TableHead>}
-              {visibleColumns.valorTotal && <TableHead className="text-right">Valor Total</TableHead>}
               {visibleColumns.acoes && <TableHead className="text-center">Ações</TableHead>}
             </TableRow>
           </TableHeader>
@@ -659,7 +651,7 @@ export default function Entradas({ isTab = false }) {
                   {visibleColumns.codigo && (
                     <TableCell>
                       <Badge variant="outline" className="font-mono text-[10px] uppercase">
-                        {medicamentos?.find(m => m.id === entrada.medicamento_id)?.codigo || "S/C"}
+                        {medicamentosMap[entrada.medicamento_id]?.codigo || "S/C"}
                       </Badge>
                     </TableCell>
                   )}
@@ -710,21 +702,6 @@ export default function Entradas({ isTab = false }) {
                       {entrada.fornecedor_nome || "-"}
                     </TableCell>
                   )}
-                  {visibleColumns.nf && (
-                    <TableCell className="text-slate-600">
-                      {entrada.nota_fiscal ? (
-                        <span className="flex items-center gap-1">
-                          <FileText className="w-3 h-3" />
-                          {entrada.nota_fiscal}
-                        </span>
-                      ) : "-"}
-                    </TableCell>
-                  )}
-                  {visibleColumns.valorTotal && (
-                    <TableCell className="text-right font-medium">
-                      {entrada.valor_total ? `R$ ${entrada.valor_total.toFixed(2)}` : "-"}
-                    </TableCell>
-                  )}
                   {visibleColumns.acoes && (
                     <TableCell className="text-center">
                       <div className="flex justify-center gap-1">
@@ -766,7 +743,7 @@ export default function Entradas({ isTab = false }) {
           setEditingEntrada(null);
         }}
         onSave={handleSave}
-        medicamentos={medicamentos}
+        medicamentos={medicamentos.filter(m => !m.padronizado)}
         fornecedores={fornecedores}
         isLoading={createEntradaMutation.isPending || updateEntradaMutation.isPending}
         entrada={editingEntrada}
@@ -776,7 +753,7 @@ export default function Entradas({ isTab = false }) {
       <ImportacaoEntradas
         open={importOpen}
         onClose={() => setImportOpen(false)}
-        medicamentos={medicamentos}
+        medicamentos={medicamentos.filter(m => !m.padronizado)}
         fornecedores={fornecedores}
         onImport={handleBulkImport}
         isImporting={isImporting}

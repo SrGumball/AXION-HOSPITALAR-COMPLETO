@@ -53,12 +53,6 @@ export default function EntradaForm({ open, onClose, onSave, medicamentos = [], 
         const value = e.target.value;
         setForm((prev) => {
             const updated = { ...prev, [field]: value };
-            // Auto-calcular valor total
-            if (field === "quantidade" || field === "valor_unitario") {
-                const qty = parseFloat(field === "quantidade" ? value : prev.quantidade) || 0;
-                const unit = parseFloat(field === "valor_unitario" ? value : prev.valor_unitario) || 0;
-                updated.valor_total = qty > 0 && unit > 0 ? (qty * unit).toFixed(2) : "";
-            }
             return updated;
         });
     };
@@ -205,35 +199,7 @@ export default function EntradaForm({ open, onClose, onSave, medicamentos = [], 
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        {/* Valor Unitário */}
-                        <div>
-                            <Label htmlFor="valor-unitario">Valor Unitário (R$)</Label>
-                            <Input
-                                id="valor-unitario"
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                placeholder="0,00"
-                                value={form.valor_unitario}
-                                onChange={handleChange("valor_unitario")}
-                            />
-                        </div>
 
-                        {/* Valor Total (auto) */}
-                        <div>
-                            <Label htmlFor="valor-total">Valor Total (R$)</Label>
-                            <Input
-                                id="valor-total"
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                placeholder="Calculado automaticamente"
-                                value={form.valor_total}
-                                onChange={handleChange("valor_total")}
-                            />
-                        </div>
-                    </div>
 
                     {/* Fornecedor */}
                     <div>
@@ -251,28 +217,14 @@ export default function EntradaForm({ open, onClose, onSave, medicamentos = [], 
                         </Select>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        {/* Nota Fiscal */}
-                        <div>
-                            <Label htmlFor="nota-fiscal">Nota Fiscal</Label>
-                            <Input
-                                id="nota-fiscal"
-                                placeholder="Ex: NF-001234"
-                                value={form.nota_fiscal}
-                                onChange={handleChange("nota_fiscal")}
-                            />
-                        </div>
-
-                        {/* Observação */}
-                        <div>
-                            <Label htmlFor="observacao">Observação</Label>
-                            <Input
-                                id="observacao"
-                                placeholder="Opcional"
-                                value={form.observacao}
-                                onChange={handleChange("observacao")}
-                            />
-                        </div>
+                    <div>
+                        <Label htmlFor="observacao">Observação</Label>
+                        <Input
+                            id="observacao"
+                            placeholder="Opcional"
+                            value={form.observacao}
+                            onChange={handleChange("observacao")}
+                        />
                     </div>
 
                     <DialogFooter>

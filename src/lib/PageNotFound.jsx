@@ -13,7 +13,10 @@ export default function PageNotFound() {
         A página que você está procurando não existe ou foi movida.
       </p>
       <button
-        onClick={showWelcome}
+        onClick={() => {
+          window.location.hash = "#/";
+          showWelcome();
+        }}
         className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
       >
         Voltar à Seleção de Módulos

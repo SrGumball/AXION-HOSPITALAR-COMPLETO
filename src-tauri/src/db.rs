@@ -21,6 +21,9 @@ pub fn init(app: AppHandle) -> Result<Connection, String> {
     // Check for missing columns in existing tables (manual migration for existing installs)
     let tables_to_check = vec![
         ("Medicamento", "codigo", "TEXT"),
+        ("Medicamento", "nome_comercial", "TEXT"),
+        ("Medicamento", "padronizado", "BOOLEAN DEFAULT 0"),
+        ("Medicamento", "estoque_satelite", "INTEGER DEFAULT 0"),
         ("Medicamento", "created_at", "DATETIME DEFAULT CURRENT_TIMESTAMP"),
         ("Lote", "medicamento_nome", "TEXT"),
         ("Lote", "created_at", "DATETIME DEFAULT CURRENT_TIMESTAMP"),
@@ -479,6 +482,9 @@ pub async fn import_backup(
     // Add any missing columns (for backups created with older versions)
     let tables_to_check = vec![
         ("Medicamento", "codigo", "TEXT"),
+        ("Medicamento", "nome_comercial", "TEXT"),
+        ("Medicamento", "padronizado", "BOOLEAN DEFAULT 0"),
+        ("Medicamento", "estoque_satelite", "INTEGER DEFAULT 0"),
         ("Medicamento", "created_at", "DATETIME DEFAULT CURRENT_TIMESTAMP"),
         ("Lote", "medicamento_nome", "TEXT"),
         ("Lote", "created_at", "DATETIME DEFAULT CURRENT_TIMESTAMP"),

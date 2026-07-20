@@ -23,9 +23,19 @@ export function ComboboxMedicamento({
     placeholder = "Selecione o medicamento..."
 }) {
     const [open, setOpen] = React.useState(false)
+    const [search, setSearch] = React.useState("")
 
     // O componente recebe os medicamentos inteiros como options
     const selectedMed = medicamentos.find((m) => m.id === value);
+
+    const filteredMedicamentos = React.useMemo(() => {
+        if (!search) return medicamentos.slice(0, 100);
+        const term = search.toLowerCase();
+        return medicamentos.filter(m => 
+            m.nome.toLowerCase().includes(term) || 
+            (m.codigo && m.codigo.toLowerCase().includes(term))
+        ).slice(0, 100);
+    }, [medicamentos, search]);
 
     return (
         <Popover open={open} onOpenChange={setOpen} modal={true}>
@@ -55,27 +65,20 @@ export function ComboboxMedicamento({
                 </Button>
             </PopoverTrigger>
             <PopoverContent className="w-[--radix-popover-trigger-width] p-0 shadow-lg border-slate-200" align="start">
-                <Command
-                    filter={(val, search) => {
-                        // Command inyecting 'val' logic handles the value as lower-cased item.value
-                        // For custom searching based on the item properties we find it
-                        const med = medicamentos.find(m => m.id === val || m.id.toLowerCase() === val);
-                        if (!med) return 0;
-
-                        const term = search.toLowerCase();
-                        if (med.nome.toLowerCase().includes(term)) return 1;
-                        if (med.codigo && med.codigo.toLowerCase().includes(term)) return 1;
-                        return 0;
-                    }}
-                >
-                    <CommandInput placeholder="Buscar por código ou nome..." className="h-10 text-sm" />
+                <Command shouldFilter={false}>
+                    <CommandInput 
+                        placeholder="Buscar por código ou nome..." 
+                        className="h-10 text-sm" 
+                        value={search}
+                        onValueChange={setSearch}
+                    />
                     <CommandEmpty className="py-6 text-center text-sm text-slate-500">Nenhum medicamento encontrado.</CommandEmpty>
                     <CommandList
                         className="max-h-[250px] overflow-y-auto w-full"
                         onWheel={(e) => e.stopPropagation()}
                     >
                         <CommandGroup className="px-1 py-1">
-                            {medicamentos.map((m) => (
+                            {filteredMedicamentos.map((m) => (
                                 <CommandItem
                                     key={m.id}
                                     value={m.id} // value passes through filter

@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import MedicamentoForm from "@/components/forms/MedicamentoForm";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const CATEGORIA_LABELS = {
   analgesico: "Analgésico",
@@ -48,6 +49,7 @@ const APRESENTACAO_LABELS = {
 
 export default function Medicamentos() {
   const [search, setSearch] = useState("");
+  const [activeTab, setActiveTab] = useState("padronizados");
   const [formOpen, setFormOpen] = useState(false);
   const [editingMed, setEditingMed] = useState(null);
   const [visibleColumns, setVisibleColumns] = useState({
@@ -113,12 +115,19 @@ export default function Medicamentos() {
     }
   };
 
-  const filteredMeds = medicamentos.filter(m =>
-    m.nome?.toLowerCase().includes(search.toLowerCase()) ||
-    m.principio_ativo?.toLowerCase().includes(search.toLowerCase()) ||
-    m.codigo?.toLowerCase().includes(search.toLowerCase()) ||
-    m.codigo_barras?.includes(search)
-  ).sort((a, b) => (a.nome || "").localeCompare(b.nome || ""));
+  const filteredMeds = medicamentos.filter(m => {
+    // Aba filter
+    if (activeTab === "padronizados" && !m.padronizado) return false;
+    if (activeTab === "nao_padronizados" && m.padronizado) return false;
+    
+    // Search filter
+    return (
+      m.nome?.toLowerCase().includes(search.toLowerCase()) ||
+      m.principio_ativo?.toLowerCase().includes(search.toLowerCase()) ||
+      m.codigo?.toLowerCase().includes(search.toLowerCase()) ||
+      m.codigo_barras?.includes(search)
+    );
+  }).sort((a, b) => (a.nome || "").localeCompare(b.nome || ""));
 
   return (
     <div className="p-6 space-y-4 h-[calc(100vh)] overflow-hidden flex flex-col">
@@ -163,6 +172,13 @@ export default function Medicamentos() {
           </DropdownMenu>
         </div>
       </div>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-2 max-w-[400px]">
+          <TabsTrigger value="padronizados">Padronizados</TabsTrigger>
+          <TabsTrigger value="nao_padronizados">Não Padronizados</TabsTrigger>
+        </TabsList>
+      </Tabs>
 
       {/* Search */}
       <Card className="p-4 border-0 shadow-sm">
@@ -225,8 +241,11 @@ export default function Medicamentos() {
                     <TableCell>
                       <div>
                         <p className="font-medium text-slate-800">{med.nome}</p>
+                        {med.nome_comercial && (
+                          <p className="text-xs text-indigo-600 font-medium">Comercial: {med.nome_comercial}</p>
+                        )}
                         {med.principio_ativo && (
-                          <p className="text-xs text-slate-500">{med.principio_ativo}</p>
+                          <p className="text-[10px] text-slate-500">{med.principio_ativo}</p>
                         )}
                       </div>
                     </TableCell>
@@ -268,13 +287,14 @@ export default function Medicamentos() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleEdit(med)}>
+                          <DropdownMenuItem onClick={() => handleEdit(med)} disabled={med.padronizado}>
                             <Pencil className="w-4 h-4 mr-2" />
                             Editar
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => handleDelete(med.id)}
-                            className="text-red-600"
+                            className={med.padronizado ? "text-red-300" : "text-red-600"}
+                            disabled={med.padronizado}
                           >
                             <Trash2 className="w-4 h-4 mr-2" />
                             Excluir

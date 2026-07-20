@@ -7,16 +7,84 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const CATEGORIAS = [
-    "Analgésico",
-    "Antitérmico",
-    "Anti-inflamatório",
-    "Antibiótico",
-    "Antialérgico",
-    "Antihipertensivo",
-    "Antidiabético",
-    "Controlado",
-    "Psicotrópico",
-    "Hormônio"
+    "CLÍNICOS - ANALGÉSICO, ANTITERMICO",
+    "CLÍNICOS - ANESTÉSICO",
+    "CLÍNICOS - ANTIAGREGANTE PLAQUETÁRIO E VASODILATADOR",
+    "CLÍNICOS - ANTIANEMICO",
+    "CLÍNICOS - ANTIARRÍTMICO",
+    "CLÍNICOS - ANTIBIÓTICO / ANTIBACTERIANO",
+    "CLÍNICOS - ANTIBIÓTICO OCULAR",
+    "CLÍNICOS - ANTIBIÓTICO OTOLÓGICO",
+    "CLÍNICOS - ANTIBIÓTICO TÓPICO",
+    "CLÍNICOS - ANTICOAGULANTE",
+    "CLÍNICOS - ANTICONCEPCIONAL",
+    "CLÍNICOS - ANTIDIARREICO",
+    "CLÍNICOS - ANTIEMÉTICO",
+    "CLÍNICOS - ANTIESPASMÓDICO",
+    "CLÍNICOS - ANTIFLATULENCIA GASTROINTESTINAL",
+    "CLÍNICOS - ANTIFÚNGICO",
+    "CLÍNICOS - ANTIFÚNGICO TÓPICO",
+    "CLÍNICOS - ANTIGLAUCOMATOSO",
+    "CLÍNICOS - ANTIHIPERTENSIVO",
+    "CLÍNICOS - ANTIHIPERTENSIVO ESSENCIAL",
+    "CLÍNICOS - ANTIHIPERTENSIVO, ANTIARRÍTMICO",
+    "CLÍNICOS - ANTIHIPERTENSIVO, VASODILATADOR",
+    "CLÍNICOS - ANTIHISTAMINICO",
+    "CLÍNICOS - ANTIINFLAMATÓRIO ESTEROIDE",
+    "CLÍNICOS - ANTIINFLAMATÓRIO NÃO ESTERÓIDE",
+    "CLÍNICOS - ANTIINFLAMATÓRIO, ANTIULCERATIVO ORAL",
+    "CLÍNICOS - ANTIINFLAMÁTORIO",
+    "CLÍNICOS - ANTINEOPLASICO/ANTIPROSTATICO",
+    "CLÍNICOS - ANTINEURÍTICO",
+    "CLÍNICOS - ANTIPARASITARIO",
+    "CLÍNICOS - ANTIREFLUXO, GASTROCINÉTICO",
+    "CLÍNICOS - ANTIULCEROSO",
+    "CLÍNICOS - ANTIVARICOSO, ANTI-HEMORROIDÁRIO",
+    "CLÍNICOS - ANTIVIRAL",
+    "CLÍNICOS - ANTIÁCIDO",
+    "CLÍNICOS - BETA BLOQUEADOR",
+    "CLÍNICOS - BRONCODILATADOR",
+    "CLÍNICOS - CARDIOTÔNICO",
+    "CLÍNICOS - CICATRIZANTE TÓPICO",
+    "CLÍNICOS - CORTICOSTERÓIDE TÓPICO + ASSOCIAÇÕES",
+    "CLÍNICOS - CORTICÓIDE",
+    "CLÍNICOS - DISLEPIDEMIA",
+    "CLÍNICOS - DIURÉTICO",
+    "CLÍNICOS - EMOLIENTE E PROTETOR OFTÁLMICO",
+    "CLÍNICOS - ESCABICIDA, PEDICULICIDA",
+    "CLÍNICOS - GLICOCORTICÓIDE",
+    "CLÍNICOS - HEMOSTÁTICO",
+    "CLÍNICOS - HIPERPLASIA PROSTÁTICA BENIGNA",
+    "CLÍNICOS - HIPERTENSOR",
+    "CLÍNICOS - HIPERTROFIA PROSTÁTICA",
+    "CLÍNICOS - HIPOGLICEMIANTE",
+    "CLÍNICOS - HIPOLIPEMIANTES",
+    "CLÍNICOS - HORMONIO TIREOIDIANO/ANTITIREOIDIANO",
+    "CLÍNICOS - INCONTINÊNCIA URINÁRIA",
+    "CLÍNICOS - LAXANTE / LAVAGEM INTESTINAL",
+    "CLÍNICOS - MIDRIÁTICO, CICLOPLÉGICO, ANTIESPASMÓDICO",
+    "CLÍNICOS - MUCOLÍTICO",
+    "CLÍNICOS - OSTEORTRITE/OSTEOARTROSE",
+    "CLÍNICOS - REEDUCADOR INTESTINAL",
+    "CLÍNICOS - REHIDRATANTE",
+    "CLÍNICOS - RELAXANTE",
+    "CLÍNICOS - REPOSITOR ELETROLÍTICO",
+    "CLÍNICOS - SIMPATOMIMETICO",
+    "CLÍNICOS - SOLUÇÕES",
+    "CLÍNICOS - VASODILATADOR CEREBRAL E PERIFÉRICO",
+    "CLÍNICOS - VASODILATADOR SISTÊMICO",
+    "CLÍNICOS - VITAMINAS E SAIS MINERAIS",
+    "PSICOTRÓPICOS - ALZHEIMER",
+    "PSICOTRÓPICOS - ANALGÉSICO DE AÇÃO CENTRAL",
+    "PSICOTRÓPICOS - ANSIOLITICO, SEDATIVO",
+    "PSICOTRÓPICOS - ANTAGONISTA DE BENZODIAZEPÍNICOS",
+    "PSICOTRÓPICOS - ANTICONVULSIVANTE",
+    "PSICOTRÓPICOS - ANTIDEPRESSIVO",
+    "PSICOTRÓPICOS - ANTIEPILÉTICO",
+    "PSICOTRÓPICOS - ANTIPARKINSONIANO",
+    "PSICOTRÓPICOS - ANTIPSICÓTICO",
+    "PSICOTRÓPICOS - HIPNÓTICO",
+    "PSICOTRÓPICOS - NEUROLÉPTICO",
 ];
 
 const APRESENTACOES = [
@@ -38,18 +106,7 @@ const APRESENTACOES = [
     "Sachê"
 ];
 
-const CATEGORIA_MAP = {
-    "Analgésico": "analgesico",
-    "Antitérmico": "antitermico",
-    "Anti-inflamatório": "anti_inflamatorio",
-    "Antibiótico": "antibiotico",
-    "Antialérgico": "antialergico",
-    "Antihipertensivo": "antihipertensivo",
-    "Antidiabético": "antidiabetico",
-    "Controlado": "controlado",
-    "Psicotrópico": "psicotropico",
-    "Hormônio": "hormonio"
-};
+// Removed CATEGORIA_MAP
 
 const APRESENTACAO_MAP = {
     "Comprimido": "comprimido",
@@ -71,19 +128,20 @@ const APRESENTACAO_MAP = {
 };
 
 // Inversa para preencher o select
-const CATEGORIA_MAP_INV = Object.fromEntries(Object.entries(CATEGORIA_MAP).map(([k, v]) => [v, k]));
+// Removed CATEGORIA_MAP_INV
 const APRESENTACAO_MAP_INV = Object.fromEntries(Object.entries(APRESENTACAO_MAP).map(([k, v]) => [v, k]));
 
 export default function MedicamentoForm({ open, onClose, onSave, medicamento, isLoading }) {
     const [form, setForm] = useState({
-        nome: "", codigo: "", principio_ativo: "", categoria: "", apresentacao: "",
-        unidade_medida: "", estoque_minimo: 0, localizacao: "", observacoes: "",
+        nome: "", nome_comercial: "", codigo: "", principio_ativo: "", categoria: "", apresentacao: "",
+        unidade_medida: "", estoque_minimo: 0, localizacao: "", observacoes: "", padronizado: false,
     });
 
     useEffect(() => {
         if (medicamento) {
             setForm({
                 nome: medicamento.nome || "",
+                nome_comercial: medicamento.nome_comercial || "",
                 codigo: medicamento.codigo || "",
                 principio_ativo: medicamento.principio_ativo || "",
                 categoria: medicamento.categoria || "",
@@ -92,9 +150,10 @@ export default function MedicamentoForm({ open, onClose, onSave, medicamento, is
                 estoque_minimo: medicamento.estoque_minimo || 0,
                 localizacao: medicamento.localizacao || "",
                 observacoes: medicamento.observacoes || "",
+                padronizado: medicamento.padronizado || false,
             });
         } else {
-            setForm({ nome: "", codigo: "", principio_ativo: "", categoria: "", apresentacao: "", unidade_medida: "", estoque_minimo: 0, localizacao: "", observacoes: "" });
+            setForm({ nome: "", nome_comercial: "", codigo: "", principio_ativo: "", categoria: "", apresentacao: "", unidade_medida: "", estoque_minimo: 0, localizacao: "", observacoes: "", padronizado: false });
         }
     }, [medicamento, open]);
 
@@ -113,7 +172,7 @@ export default function MedicamentoForm({ open, onClose, onSave, medicamento, is
             return;
         }
         if (!form.apresentacao) {
-            toast.error("Selecione a forma farmacêutica");
+            toast.error("Selecione a apresentação");
             return;
         }
 
@@ -129,22 +188,23 @@ export default function MedicamentoForm({ open, onClose, onSave, medicamento, is
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <Label>Nome</Label>
+                            <Label>Nome Genérico</Label>
                             <Input value={form.nome} onChange={handleChange("nome")} required />
+                        </div>
+                        <div>
+                            <Label>Nome Comercial</Label>
+                            <Input value={form.nome_comercial} onChange={handleChange("nome_comercial")} placeholder="Opcional" />
                         </div>
                         <div>
                             <Label>Código (ID)</Label>
                             <Input value={form.codigo} onChange={handleChange("codigo")} placeholder="Ex: MED001" />
                         </div>
-                        <div>
-                            <Label>Princípio Ativo</Label>
-                            <Input value={form.principio_ativo} onChange={handleChange("principio_ativo")} />
-                        </div>
+
                         <div>
                             <Label>Categoria</Label>
                             <Select
-                                value={CATEGORIA_MAP_INV[form.categoria] || form.categoria}
-                                onValueChange={(val) => handleSelectChange("categoria")(CATEGORIA_MAP[val] || val)}
+                                value={form.categoria}
+                                onValueChange={(val) => handleSelectChange("categoria")(val)}
                             >
                                 <SelectTrigger>
                                     <SelectValue placeholder="Selecione..." />
@@ -157,7 +217,7 @@ export default function MedicamentoForm({ open, onClose, onSave, medicamento, is
                             </Select>
                         </div>
                         <div>
-                            <Label>Forma Farmacêutica</Label>
+                            <Label>Apresentação</Label>
                             <Select
                                 value={APRESENTACAO_MAP_INV[form.apresentacao] || form.apresentacao}
                                 onValueChange={(val) => handleSelectChange("apresentacao")(APRESENTACAO_MAP[val] || val)}
@@ -176,15 +236,18 @@ export default function MedicamentoForm({ open, onClose, onSave, medicamento, is
                             <Label>DOSAGEM</Label>
                             <Input value={form.unidade_medida} onChange={handleChange("unidade_medida")} placeholder="Ex: mg, ml, un" />
                         </div>
-                        <div>
-                            <Label>Estoque Mínimo</Label>
-                            <Input type="number" value={form.estoque_minimo} onChange={handleChange("estoque_minimo")} />
-                        </div>
                     </div>
-                    <div>
-                        <Label>Localização</Label>
-                        <Input value={form.localizacao} onChange={handleChange("localizacao")} placeholder="Prateleira, Armário, etc" />
+                    <div className="flex items-center gap-2 pt-2 pb-2">
+                        <input 
+                            type="checkbox" 
+                            id="padronizado" 
+                            checked={form.padronizado} 
+                            onChange={(e) => setForm({ ...form, padronizado: e.target.checked })}
+                            className="rounded border-slate-300 w-4 h-4 text-blue-600" 
+                        />
+                        <Label htmlFor="padronizado" className="cursor-pointer">Medicamento Padronizado</Label>
                     </div>
+
                     <div>
                         <Label>Observações</Label>
                         <Input value={form.observacoes} onChange={handleChange("observacoes")} />

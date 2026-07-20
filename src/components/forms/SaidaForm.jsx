@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,12 +48,20 @@ export default function SaidaForm({ open, onClose, onSave, initialData = null, m
 
     const handleMedicamento = (id) => {
         const med = medicamentos.find((m) => m.id === id);
+        
+        // FEFO: Encontrar o lote que vence primeiro
+        const lotesDoMed = lotes
+            .filter(l => l.medicamento_id === id && l.quantidade_atual > 0)
+            .sort((a, b) => new Date(a.data_validade) - new Date(b.data_validade));
+        
+        const loteFefo = lotesDoMed.length > 0 ? lotesDoMed[0] : null;
+
         setForm((prev) => ({
             ...prev,
             medicamento_id: id,
             medicamento_nome: med?.nome || "",
-            lote_id: "", // Reset lot when medication changes
-            numero_lote: ""
+            lote_id: loteFefo ? loteFefo.id : "",
+            numero_lote: loteFefo ? loteFefo.numero_lote : ""
         }));
     };
 
@@ -91,9 +99,9 @@ export default function SaidaForm({ open, onClose, onSave, initialData = null, m
             return;
         }
 
-        const selectedLote = lotes.find(l => l.id === form.lote_id);
-        if (selectedLote && Number(form.quantidade) > (selectedLote.quantidade_atual || 0)) {
-            toast.error("Quantidade excede o estoque disponível no lote");
+        const selectedMed = medicamentos.find(m => m.id === form.medicamento_id);
+        if (selectedMed && Number(form.quantidade) > Number(selectedMed.estoque_satelite || 0)) {
+            toast.error("Quantidade excede o estoque disponível na Farmácia Satélite");
             return;
         }
 
@@ -104,12 +112,17 @@ export default function SaidaForm({ open, onClose, onSave, initialData = null, m
         });
     };
 
-    const filteredLotes = lotes.filter(l => 
-        l.medicamento_id === form.medicamento_id && 
-        ((l.quantidade_atual || 0) > 0 || l.id === form.lote_id)
-    );
-    const currentLote = lotes.find(l => l.id === form.lote_id);
-    const stockExceeded = currentLote && Number(form.quantidade) > (currentLote.quantidade_atual || 0);
+    const filteredLotes = lotes
+        .filter(l => l.medicamento_id === form.medicamento_id)
+        .sort((a, b) => new Date(a.data_validade) - new Date(b.data_validade));
+        
+    const selectedMed = medicamentos.find(m => m.id === form.medicamento_id);
+    const stockExceeded = selectedMed && Number(form.quantidade) > Number(selectedMed.estoque_satelite || 0);
+    
+    // Memoize the filtered array to avoid expensive re-creations on every render (e.g. when typing)
+    const satelliteMedicamentos = useMemo(() => {
+        return medicamentos.filter(m => Number(m.estoque_satelite || 0) > 0);
+    }, [medicamentos]);
 
     return (
         <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
@@ -126,7 +139,7 @@ export default function SaidaForm({ open, onClose, onSave, initialData = null, m
                     <div>
                         <Label htmlFor="med-select">Medicamento <span className="text-red-500">*</span></Label>
                         <ComboboxMedicamento
-                            medicamentos={medicamentos}
+                            medicamentos={satelliteMedicamentos}
                             value={form.medicamento_id}
                             onChange={handleMedicamento}
                         />
@@ -147,16 +160,16 @@ export default function SaidaForm({ open, onClose, onSave, initialData = null, m
                                 } />
                             </SelectTrigger>
                             <SelectContent>
-                                {filteredLotes.map((l) => (
-                                    <SelectItem key={l.id} value={l.id}>
-                                        {l.numero_lote} (Stock: {l.quantidade_atual}) - Val: {l.data_validade}
+                                {filteredLotes.map((l, index) => (
+                                    <SelectItem key={l.id} value={l.id} className={index === 0 ? "font-bold text-amber-700 bg-amber-50" : ""}>
+                                        {index === 0 ? "⭐ " : ""}{l.numero_lote} (Stock: {l.quantidade_atual}) - Val: {l.data_validade} {index === 0 ? "(Vence Primeiro)" : ""}
                                     </SelectItem>
                                 ))}
                             </SelectContent>
                         </Select>
-                        {currentLote && (
+                        {selectedMed && (
                             <p className="text-xs text-slate-500 mt-1">
-                                Estoque disponível neste lote: <span className="font-bold">{currentLote.quantidade_atual}</span>
+                                Estoque disponível na Satélite: <span className="font-bold">{selectedMed.estoque_satelite || 0}</span>
                             </p>
                         )}
                     </div>
@@ -169,7 +182,7 @@ export default function SaidaForm({ open, onClose, onSave, initialData = null, m
                                 id="quantidade"
                                 type="number"
                                 min="1"
-                                max={currentLote?.quantidade_atual}
+                                max={selectedMed?.estoque_satelite || 1}
                                 placeholder="0"
                                 value={form.quantidade}
                                 onChange={handleChange("quantidade")}
