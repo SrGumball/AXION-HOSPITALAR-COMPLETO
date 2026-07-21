@@ -8,6 +8,7 @@ import { useState, useEffect } from "react";
 import logo from "../assets/logo-tr.png";
 import { Toaster, toast } from "sonner";
 import { addLog } from "./logger";
+import { useLicense } from "./LicenseContext";
 
 // ─── Ícones SVG ───────────────────────────────────────────────────────────────
 
@@ -173,6 +174,7 @@ function ModuleCard({ mod, delay, visible, onClick }) {
 // ─── Componente principal ─────────────────────────────────────────────────────
 
 export function WelcomeScreen({ onEnter }) {
+  const { valid, openModal } = useLicense();
   const [visible, setVisible] = useState(false);
   const [exiting, setExiting] = useState(false);
   
@@ -303,6 +305,37 @@ export function WelcomeScreen({ onEnter }) {
     >
       <Toaster position="top-right" richColors />
       
+      {/* Indicador de Licença */}
+      <button
+        onClick={openModal}
+        style={{
+          position: "absolute",
+          top: 24,
+          left: 24,
+          background: "rgba(255,255,255,0.03)",
+          border: "1px solid rgba(255,255,255,0.05)",
+          padding: "8px 12px",
+          borderRadius: "8px",
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          cursor: "pointer",
+          zIndex: 50,
+          backdropFilter: "blur(4px)",
+          opacity: visible ? 1 : 0,
+          transition: "opacity 0.6s ease",
+        }}
+      >
+        <div style={{
+          width: 8, height: 8, borderRadius: "50%",
+          background: valid ? "#22c55e" : "#ef4444",
+          boxShadow: valid ? "0 0 8px rgba(34,197,94,0.6)" : "0 0 8px rgba(239,68,68,0.8)",
+        }} />
+        <span style={{ color: "#94a3b8", fontSize: 12, fontWeight: 500 }}>
+          {valid ? "Licença Ativa" : "Licença Inválida"}
+        </span>
+      </button>
+
       {/* Grade de fundo */}
       <div style={{
         position: "absolute",

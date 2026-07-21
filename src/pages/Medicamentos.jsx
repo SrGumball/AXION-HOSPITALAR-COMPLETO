@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuCheckboxItem } from "@/components/ui/dropdown-menu";
-import { Plus, Search, MoreHorizontal, Pencil, Trash2, Package, Printer, Settings2 } from "lucide-react";
+import { Plus, Search, MoreHorizontal, Pencil, Trash2, Package, Printer, Settings2, Lock } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -240,7 +240,10 @@ export default function Medicamentos() {
                   {visibleColumns.medicamento && (
                     <TableCell>
                       <div>
-                        <p className="font-medium text-slate-800">{med.nome}</p>
+                        <div className="flex items-center gap-1.5">
+                          <p className="font-medium text-slate-800">{med.nome}</p>
+                          {med.padronizado && <Lock className="w-3.5 h-3.5 text-amber-500" title="Bloqueado no código" />}
+                        </div>
                         {med.nome_comercial && (
                           <p className="text-xs text-indigo-600 font-medium">Comercial: {med.nome_comercial}</p>
                         )}
@@ -280,27 +283,32 @@ export default function Medicamentos() {
                   )}
                   {visibleColumns.acoes && (
                     <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <MoreHorizontal className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleEdit(med)} disabled={med.padronizado}>
-                            <Pencil className="w-4 h-4 mr-2" />
-                            Editar
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => handleDelete(med.id)}
-                            className={med.padronizado ? "text-red-300" : "text-red-600"}
-                            disabled={med.padronizado}
-                          >
-                            <Trash2 className="w-4 h-4 mr-2" />
-                            Excluir
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      {med.padronizado ? (
+                        <div className="flex justify-center items-center h-8 w-8" title="Medicamento padronizado (Bloqueado temporariamente)">
+                          <Lock className="w-4 h-4 text-amber-500" />
+                        </div>
+                      ) : (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <MoreHorizontal className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleEdit(med)}>
+                              <Pencil className="w-4 h-4 mr-2" />
+                              Editar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleDelete(med.id)}
+                              className="text-red-600"
+                            >
+                              <Trash2 className="w-4 h-4 mr-2" />
+                              Excluir
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
                     </TableCell>
                   )}
                 </TableRow>
