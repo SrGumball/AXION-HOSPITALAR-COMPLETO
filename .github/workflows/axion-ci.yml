@@ -1,0 +1,57 @@
+name: Build AXION-HOSPITALAR-COMPLETO
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'AXION-HOSPITALAR-COMPLETO/**'
+      - '.github/workflows/axion-ci.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [macos-latest, ubuntu-22.04, windows-latest]
+    runs-on: ${{ matrix.platform }}
+    
+    defaults:
+      run:
+        working-directory: ./AXION-HOSPITALAR-COMPLETO
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies (ubuntu only)
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - name: setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: './AXION-HOSPITALAR-COMPLETO/package-lock.json'
+
+      - name: install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: install frontend dependencies
+        run: npm ci || npm install
+
+      - name: build tauri app
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          projectPath: ./AXION-HOSPITALAR-COMPLETO
+          tagName: v__VERSION__
+          releaseName: 'Axion Saúde v__VERSION__'
+          releaseBody: 'Nova versão disponível para download.'
+          releaseDraft: true
