@@ -296,8 +296,8 @@ function FolhaEvolucaoList() {
               <TableHeader className="bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100">
                 <TableRow className="print:h-5">
                   <TableHead className="border border-slate-400 font-bold text-slate-900 py-1 px-2">Nome do Medicamento</TableHead>
-                  <TableHead className="border border-slate-400 font-bold text-slate-900 w-28 py-1 px-2">Apresentação</TableHead>
                   <TableHead className="border border-slate-400 font-bold text-slate-900 w-24 py-1 px-2">Dosagem</TableHead>
+                  <TableHead className="border border-slate-400 font-bold text-slate-900 w-28 py-1 px-2">Apresentação</TableHead>
                   <TableHead className="border border-slate-400 font-bold text-slate-900 text-center w-20 py-1 px-1">Qtd. Pedida</TableHead>
                   <TableHead className="border border-slate-400 font-bold text-slate-900 text-center w-20 py-1 px-1">Qtd. Atendida</TableHead>
                 </TableRow>
@@ -317,11 +317,11 @@ function FolhaEvolucaoList() {
                         <TableCell className="border border-slate-400 font-semibold text-slate-900 dark:text-slate-100 py-0.5 px-2">
                           {med.nome}
                         </TableCell>
-                        <TableCell className="border border-slate-400 text-slate-700 dark:text-slate-300 py-0.5 px-2">
-                          {info.apresentacao}
-                        </TableCell>
                         <TableCell className="border border-slate-400 font-mono text-slate-900 dark:text-slate-100 font-bold py-0.5 px-2">
                           {info.dosagem}
+                        </TableCell>
+                        <TableCell className="border border-slate-400 text-slate-700 dark:text-slate-300 py-0.5 px-2">
+                          {info.apresentacao}
                         </TableCell>
                         <TableCell className="border border-slate-400 text-center py-0.5 px-1 h-5 bg-slate-50/20">
                           {/* Espaço em branco para escrita manual a caneta */}
