@@ -74,7 +74,7 @@ export default function SatelitePortaria() {
                   .sort((a, b) => (a.nome || "").localeCompare(b.nome || ""))
                   .map(med => (
                     <SelectItem key={med.id} value={med.id}>
-                      {med.nome} {med.unidade_medida ? `- ${med.unidade_medida}` : ""} {med.apresentacao ? `- ${med.apresentacao}` : ""}
+                      {med.nome} {med.unidade_medida && med.unidade_medida.toLowerCase() !== 'un' ? `- ${med.unidade_medida}` : ""} {med.apresentacao ? `- ${med.apresentacao}` : ""}
                     </SelectItem>
                   ))}
               </SelectContent>
@@ -88,7 +88,7 @@ export default function SatelitePortaria() {
               <h3 className="font-bold text-slate-700">
                 Livro: {(() => {
                   const m = medicamentos.find(m => m.id === selectedLivroMedId);
-                  return m ? `${m.nome} ${m.unidade_medida ? `- ${m.unidade_medida}` : ""} ${m.apresentacao ? `- ${m.apresentacao}` : ""}` : "";
+                  return m ? `${m.nome} ${m.unidade_medida && m.unidade_medida.toLowerCase() !== 'un' ? `- ${m.unidade_medida}` : ""} ${m.apresentacao ? `- ${m.apresentacao}` : ""}` : "";
                 })()}
               </h3>
               <Button variant="outline" size="sm" onClick={handlePrint} className="gap-2 text-indigo-600 border-indigo-200 hover:bg-indigo-50">
@@ -102,7 +102,7 @@ export default function SatelitePortaria() {
                 <h1 className="text-xl font-bold uppercase underline mb-2">LIVRO DE REGISTRO ESPECÍFICO</h1>
                 <h2 className="text-lg font-bold">Medicamento: {(() => {
                   const m = medicamentos.find(m => m.id === selectedLivroMedId);
-                  return m ? `${m.nome} ${m.unidade_medida ? `- ${m.unidade_medida}` : ""} ${m.apresentacao ? `- ${m.apresentacao}` : ""}` : "";
+                  return m ? `${m.nome} ${m.unidade_medida && m.unidade_medida.toLowerCase() !== 'un' ? `- ${m.unidade_medida}` : ""} ${m.apresentacao ? `- ${m.apresentacao}` : ""}` : "";
                 })()}</h2>
                 <p className="text-sm mt-2">Portaria SVS/MS nº 344/1998</p>
                 <p className="text-xs mt-1 text-slate-500">Unidade: Farmácia Satélite</p>
